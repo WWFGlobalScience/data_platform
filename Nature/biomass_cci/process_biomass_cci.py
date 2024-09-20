@@ -1,4 +1,4 @@
-"""Description of process ing `biomass_cci_README.txt`."""
+"""Description of processing `biomass_cci_README.txt`."""
 from collections import defaultdict
 import glob
 import logging
@@ -24,7 +24,12 @@ LOGGER = logging.getLogger(__name__)
 logging.getLogger('ecoshard.taskgraph').setLevel(logging.WARN)
 logging.getLogger('ecoshard.geoprocessing').setLevel(logging.WARN)
 
+BASE_DATA_DIR = '../data'
 CLIPPED_DIR = 'clipped_rasters'
+OUTPUT_DIR = 'output'
+
+for dir_path in [CLIPPED_DIR, OUTPUT_DIR]:
+    os.makedirs(dir_path, exist_ok=True)
 
 TARGET_PIXEL_SIZE = (90, -90)  # I know those rasters are 90m
 NODATA = 65535
@@ -116,15 +121,13 @@ def add_biomass_sum_to_features(
 
 def main():
     """Entry point."""
-    os.makedirs(CLIPPED_DIR, exist_ok=True)
-
     # Emily says to use this projection:
     epsg_8857 = osr.SpatialReference()
     epsg_8857.ImportFromEPSG(8857)
     epsg_8857_wkt = epsg_8857.ExportToWkt()
     task_graph = taskgraph.TaskGraph('.', n_workers=os.cpu_count())
-    target_pixel_size = (90, -90)  # I know the base data are 90m pixels
-    vector_path = "./Biomass_cci_geotiffs/Pilot_scapes"
+    vector_path = os.path.join(
+        BASE_DATA_DIR, "Biomass_cci_geotiffs/Pilot_scapes")
     vector = gdal.OpenEx(vector_path, gdal.OF_VECTOR)
     layer = vector.GetLayer()
     biomass_sum_lookup_by_year = defaultdict(lambda: defaultdict(float))
@@ -151,7 +154,7 @@ def main():
                     vector_path,
                     fid,
                     epsg_8857_wkt,
-                    target_pixel_size,
+                    TARGET_PIXEL_SIZE,
                     target_raster_path),
                 target_path_list=[target_raster_path],
                 task_name=f'clip and warp {target_raster_path}')
