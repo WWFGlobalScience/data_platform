@@ -1,1 +1,5 @@
-https://crudata.uea.ac.uk/cru/data/drought/scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022.nc.gz
+Rasters:
+	* Source: https://crudata.uea.ac.uk/cru/data/drought/scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022.nc.gz
+	* Processed:
+		* from_nc_1990_2022_scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022: Converted 1990-2020 to a geotiff with each band being a month starting from 1990-01
+		* clipped_rasters.zip directory of clipped YYYY-MM-SCAPENAME.tif rasters clipped to pixel centroids from the Scapes shapefile.
