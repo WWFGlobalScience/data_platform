@@ -1,4 +1,5 @@
 # This notebook script runs within ArcGIS Pro with a group layer of landscapes and group layer of threatened species groups
+# TODO - its more robust to use intersect rather than select and also combine all landscape polygons into one layer
 import arcpy, csv
 
 arcpy.env.overwriteOutput = True
@@ -6,35 +7,35 @@ project = arcpy.mp.ArcGISProject("CURRENT")
 active_map = project.activeMap
 
 layers = active_map.listLayers()  # all the layers in the map
-lssppdata = []
-# path to output csv
+lsSppData = []
+# path to output csv, update this with the required output location
 csvOutput = r""
 
 for l in layers:
     if l.isGroupLayer and l.name == "Landscapes":  # layer group with the landscapes each as a separate layer
-        lslayers = l.listLayers()
+        lsLayers = l.listLayers()
 
 for l in layers:
     if l.isGroupLayer and l.name == "Spp":  # layer group with the species groups layers
         spplayers = l.listLayers()
 
-for lslayer in lslayers:
-    print(lslayer)
-    sppdata = []
-    sppdata.append([lslayer.name, ])
+for lsLayer in lsLayers:
+    print(lsLayer)
+    sppData = []
+    sppData.append([lsLayer.name, ])
     sppCount = 0
     for lyr in spplayers:
         print(lyr)
-        arcpy.management.SelectLayerByLocation(lyr, "INTERSECT", lslayer)
+        arcpy.management.SelectLayerByLocation(lyr, "INTERSECT", lsLayer)
         selected = arcpy.da.SearchCursor(lyr, ["*"])
         rows = [row for row in arcpy.da.SearchCursor(lyr, ["*"])]
-        sppdata.append([lyr.name, len(rows)])
+        sppData.append([lyr.name, len(rows)])
         sppCount = sppCount + len(rows)
     # Get total
-    sppdata.append(["TOTAL COUNT", sppCount])
-    lssppdata.extend(sppdata)
+    sppData.append(["TOTAL COUNT", sppCount])
+    lsSppData.extend(sppData)
 
 with open(csvOutput, 'w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerows(lssppdata)
+    writer.writerows(lsSppData)
 print("Data has been written successfully.")
