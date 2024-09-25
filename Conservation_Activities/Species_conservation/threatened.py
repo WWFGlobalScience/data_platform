@@ -1,4 +1,5 @@
 # This notebook script runs within ArcGIS Pro with a group layer of landscapes and group layer of threatened species groups
+# TOTO - its more robust to use intersect rather than select and also combine all landscape polygons into one layer
 import arcpy, csv
 
 arcpy.env.overwriteOutput = True
