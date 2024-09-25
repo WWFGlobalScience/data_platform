@@ -1,0 +1,1 @@
+https://crudata.uea.ac.uk/cru/data/drought/scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022.nc.gz
