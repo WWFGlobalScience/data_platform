@@ -3,16 +3,18 @@ import os
 
 from rasterio.transform import Affine
 import numpy
+import pandas
 import rasterio
 import xarray
-import pandas
 
 
 def main():
     """Entrypoint."""
     nc_path = "scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022.nc"
     if not os.path.exists(nc_path):
-        raise ValueError(f'expected {nc_path} but is not found in current directory')
+        raise ValueError(
+            f'expected {nc_path} but is not found in current directory, download it from '
+            f'https://crudata.uea.ac.uk/cru/data/drought/scPDSI.cru_ts4.07early1.1901.2022.cal_1901_22.bams.2023.GLOBAL.IGBP.WHC.1901.2022.nc.gz')
 
     gdm_dataset = xarray.open_dataset(nc_path)
     basename = os.path.basename(os.path.splitext(nc_path)[0])
