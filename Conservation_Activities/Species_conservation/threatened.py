@@ -6,8 +6,8 @@ project = arcpy.mp.ArcGISProject("CURRENT")
 active_map = project.activeMap
 
 layers = active_map.listLayers()  # all the layers in the map
-lssppdata = []
-# path to output csv
+lsSppSata = []
+# path to output csv, update this with the required output location
 csvOutput = r""
 
 for l in layers:
@@ -32,9 +32,9 @@ for lsLayer in lsLayers:
         sppCount = sppCount + len(rows)
     # Get total
     sppData.append(["TOTAL COUNT", sppCount])
-    lssppdata.extend(sppData)
+    lsSppSata.extend(sppData)
 
 with open(csvOutput, 'w', newline='') as file:
     writer = csv.writer(file)
-    writer.writerows(lssppdata)
+    writer.writerows(lsSppSata)
 print("Data has been written successfully.")
