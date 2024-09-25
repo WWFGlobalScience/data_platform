@@ -12,27 +12,27 @@ csvOutput = r""
 
 for l in layers:
     if l.isGroupLayer and l.name == "Landscapes":  # layer group with the landscapes each as a separate layer
-        lslayers = l.listLayers()
+        lsLayers = l.listLayers()
 
 for l in layers:
     if l.isGroupLayer and l.name == "Spp":  # layer group with the species groups layers
         spplayers = l.listLayers()
 
-for lslayer in lslayers:
-    print(lslayer)
-    sppdata = []
-    sppdata.append([lslayer.name, ])
+for lsLayer in lsLayers:
+    print(lsLayer)
+    sppData = []
+    sppData.append([lsLayer.name, ])
     sppCount = 0
     for lyr in spplayers:
         print(lyr)
-        arcpy.management.SelectLayerByLocation(lyr, "INTERSECT", lslayer)
+        arcpy.management.SelectLayerByLocation(lyr, "INTERSECT", lsLayer)
         selected = arcpy.da.SearchCursor(lyr, ["*"])
         rows = [row for row in arcpy.da.SearchCursor(lyr, ["*"])]
-        sppdata.append([lyr.name, len(rows)])
+        sppData.append([lyr.name, len(rows)])
         sppCount = sppCount + len(rows)
     # Get total
-    sppdata.append(["TOTAL COUNT", sppCount])
-    lssppdata.extend(sppdata)
+    sppData.append(["TOTAL COUNT", sppCount])
+    lssppdata.extend(sppData)
 
 with open(csvOutput, 'w', newline='') as file:
     writer = csv.writer(file)
