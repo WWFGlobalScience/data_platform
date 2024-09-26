@@ -110,16 +110,19 @@ def add_sum_to_features(
         output_layer.CreateField(new_field)
 
     output_layer.ResetReading()
-    for year, area_lookup_by_feature in area_lookup_by_year_by_feature.items():
-        for feature in layer:
-            output_feature = ogr.Feature(output_layer.GetLayerDefn())
-            output_feature.SetFrom(feature)
-            feature_name = feature.GetField('Scape')
-            tidal_marsh_area = area_lookup_by_feature[feature_name]
-            output_feature.SetField(str(analysis_id), float(tidal_marsh_area.get()))
-            output_layer.CreateFeature(output_feature)
-            output_feature = None
-            feature = None
+    print(f'processing {year}')
+    layer.ResetReading()
+    for feature in layer:
+        output_feature = ogr.Feature(output_layer.GetLayerDefn())
+        output_feature.SetFrom(feature)
+        feature_name = feature.GetField('Scape')
+        for year, area_lookup_by_feature in area_lookup_by_year_by_feature.items():
+            area_ha = area_lookup_by_feature[feature_name]
+            analysis_id = f'forest_cover_ha_{year}'
+            output_feature.SetField(str(analysis_id), float(area_ha.get()))
+        output_layer.CreateFeature(output_feature)
+        output_feature = None
+        feature = None
 
     output_layer = None
     output_vector = None
@@ -174,7 +177,6 @@ def main():
             feature = None
     layer = None
     vector = None
-    task_graph.join()
     output_gpkg_path = os.path.join(
         OUTPUT_DIR,
         f'{os.path.basename(os.path.splitext(vector_path)[0])}_'
@@ -183,6 +185,7 @@ def main():
         forest_coverage_area_by_year_by_feature,
         vector_path,
         output_gpkg_path)
+    task_graph.join()
     task_graph.close()
 
 
