@@ -1,4 +1,4 @@
-"""Description of processing `glcclu_2000_2020.txt`."""
+"""Description of processing `glclu_2000_2020.txt`."""
 import logging
 import os
 
