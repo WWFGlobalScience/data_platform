@@ -25,7 +25,7 @@ logging.getLogger('ecoshard.geoprocessing').setLevel(logging.INFO)
 
 BASE_DATA_DIR = '../../data'
 RASTER_BASE = 'peatGPA22WGS_2cl'
-RASTER_PATH = f'{RASTER_BASE}.tif'
+RASTER_PATH = f'global_{RASTER_BASE}.tif'
 CLIPPED_DIR = 'clipped_rasters'
 OUTPUT_DIR = 'output'
 
@@ -37,8 +37,8 @@ TARGET_PIXEL_SIZE = (1000, -1000)
 NODATA = 255
 
 RASTER_ID_TO_TYPE = {
-    1: 'peat dominated',
-    2: 'peat in soil mosaic',
+    1: 'peat dominated Ha',
+    2: 'peat in soil mosaic Ha',
 }
 
 
