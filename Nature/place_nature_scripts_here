@@ -1,1 +1,117 @@
+library(rgbif)
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(ggspatial)
+library(terra)
+library(usethis)
 
+#occ_download(): unlimited records. Useful for research and citation.
+#occ_search(): limited to 100K records. Useful primarily for testing.\
+#https://docs.ropensci.org/rgbif/articles/getting_occurrence_data.html
+# FILTERING GUIDE https://data-blog.gbif.org/post/gbif-filtering-guide/
+# More advanced filtering - from these I think we should look into the gridded datasets removal https://github.com/jhnwllr/GBIF_additional_filters/blob/main/README.md
+
+
+
+# need to log in to gbif save the .renviron file. Add information to log in. Mkae sure there are no 
+#spaces after = or use quotes. Save file. RESTART SESSION FOR IT TO WORK
+usethis::edit_r_environ()
+
+# Define species list
+myspecies <- c("Chelonia mydas",
+               "Caretta caretta",
+               "Dermochelys coriacea",
+               "Eretmochelys imbricata",
+               "Lepidochelys kempii",
+               "Lepidochelys olivacea",
+               "Natator depressus")
+
+# Get taxon keys
+taxon_keys <- sapply(myspecies, function(species) {
+  key <- name_backbone(species)$usageKey
+  return(key)
+})
+
+# Try the download with simplified predicates
+madagascar_turtles <- occ_download(
+  pred_in("taxonKey", unname(taxon_keys)), #only those we specified
+  pred("hasGeospatialIssue", FALSE), #removes those with spatial probelms
+  pred("hasCoordinate", TRUE), #only those with coordinates
+  pred("occurrenceStatus","PRESENT"), #removes absense data
+  pred_gte("year", 1900), # 1990 and onward
+  pred_not(pred_in("basisOfRecord",c("FOSSIL_SPECIMEN","LIVING_SPECIMEN"))), #no fossils or living specimens
+  format = "SIMPLE_CSV",
+  user = Sys.getenv("GBIF_USER"),
+  pwd = Sys.getenv("GBIF_PWD"),
+  email = Sys.getenv("GBIF_EMAIL")
+)
+
+
+# Print download information and citation
+print(madagascar_turtles)
+
+# Wait for the download to complete - this checks whether the request status it needs to be completed before moving on.
+occ_download_wait(madagascar_turtles)
+
+# Get the download and import it into R
+turtle_data <- occ_download_get(madagascar_turtles) %>%
+  occ_download_import()
+
+# Save the data to a file
+write.csv(turtle_data, "turtle_occurrencesv2.csv", row.names = FALSE)
+############################################################################
+###making the map
+pilot_shp <- st_read("C:/Users/baezschon/OneDrive - World Wildlife Fund, Inc/Desktop/Data Platform/Pilot_scapes_EE/Madagascar_BB.shp")
+# Convert to spatial data frame with species information
+turtle_sf <- turtle_data %>%
+  filter(!is.na(decimalLongitude) & !is.na(decimalLatitude)) %>%
+  select(decimalLongitude, decimalLatitude, species, 
+         individualCount, occurrenceStatus, 
+         coordinateUncertaintyInMeters) %>%
+  st_as_sf(coords = c("decimalLongitude", "decimalLatitude"), 
+           crs = 4326)
+
+#crop data
+turtle_sf_cropped <- st_intersection(turtle_sf, pilot_shp)
+
+#map by species
+turtle_map <- ggplot() +
+  geom_sf(data = pilot_shp, fill = NA, color = "darkblue", linewidth = 0.5) +
+  geom_sf(data = turtle_sf_cropped, 
+          aes(color = species), 
+          size = 2,
+          alpha = 0.7) +
+  scale_color_brewer(palette = "Set1") +
+  annotation_scale(location = "bl") +
+  annotation_north_arrow(location = "tr", 
+                         pad_x = unit(0.2, "in"), 
+                         pad_y = unit(0.2, "in")) +
+  labs(title = "Sea Turtle Occurrences",
+       subtitle = paste("Total occurrences:", nrow(turtle_sf_cropped)),
+       color = "Species",
+       caption = "Data source: GBIF") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(size = 10)
+  )
+
+# Save the map
+ggsave("MadagascarBB_SeaTurtles_by_species.png", 
+       turtle_map, 
+       width = 12, 
+       height = 8, 
+       dpi = 300)
+
+# Print summary of records in the bbox --- save as .csv? later too? try to also look at year breakdown
+cat("\nNumber of records by species in Madagascar region:\n")
+print(table(turtle_sf_cropped$species))
+
+# Print citation information
+#cat("\nPlease cite this data using:\n")
+#gbif_citation(gbif_download)
