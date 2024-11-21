@@ -1,0 +1,18 @@
+##README
+
+#ABOUT
+
+This set of scripts is intended to calculate species occurence of a set of defined focal species within a bounded spatial area. The scripts retrieve desired species occurence data from GBIF and calculate a set of context indicators regarding change and distribution of species occurence within user-defined boundaries. For WWF's Data Platform, a set of ready-to-use shapefiles for WWF focal places are available to use.
+
+##FOLDER STRUCTURE
+- Location shapefiles are in the "boundaries" folder. This is a single shapefile of all individual locations. Individual shapefiles of each location are generated when the source.R file is run, which is called at the start of the clipping and downstream analysis steps.
+- Retrieved species occurrence data is saved to the "processed data" folder and consists of full species occurrence records for WWF Focal species. 
+- Clipped species occurrence data are available as shapefiles (with attributes) and as RDS files (tabular with geometries and attributes). These files contain occurrence data for specific species or groups of species data that has been clipped to a specific location
+- Indicator values and figures are available in the "figures" folder. Eventually RMarkdown reports can also be generated for species/places on an annual basis and outputs will be available here.
+
+All retrieval, clipping, and analysis scripts are saved in the main folder. 
+
+##Steps for retrieving and updating species occurrence data
+
+#Step 1: Retrieve GBIF occurrence records for species of interest
+Using get_data.R, run the first portion of code 
