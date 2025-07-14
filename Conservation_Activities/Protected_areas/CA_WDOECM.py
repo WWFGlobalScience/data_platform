@@ -2,15 +2,16 @@
 #Desired output: pilot landscapes shapefile with 2 additional fields. 1 for OECM area and 1 for OECM percent. (percent of scape covered by OECMs)
 
 #set workspace
-scratch_ws= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Scratch.gdb"
-analysis_ws=r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis"
+scratch_ws= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb"
+analysis_ws=  r"L:\data_platform\Analysis\Prod_outputs\Cons_activities"
 
 #data inputs. must be on VPN connect to Sasquatch drive. fild gdb's downloaded from Protected Planet
-WDOECM_gdb=r"L:\data_platform\_Data\Pilots_data\WDOECM_Sep2024_Public\WDOECM_Sep2024_Public.gdb"
-WDOECM_polys= f'{WDOECM_gdb}\WDOECM_poly_Sep2024'
-WDOECM_points= f'{WDOECM_gdb}\WDOECM_point_Sep2024'
+WDOECM_gdb=r"L:\data_platform\_Data\prod_data\WDOECM_May2025_Public\WDOECM_May2025_Public.gdb"
+WDOECM_polys= f'{WDOECM_gdb}\WDOECM_poly_May2025'
+WDOECM_points= f'{WDOECM_gdb}\WDOECM_point_May2025'
 
-scapes= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis\Pilot_scapes_EE.shp"
+scapes= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb\Prod_scapes"
+polys_all_dis= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb\polys_all_dis" #WDPA polys flat layer from WDPA script outputs.
 
 import arcpy
 arcpy.env.workspace= scratch_ws
@@ -31,17 +32,16 @@ points_PS_inc= arcpy.management.SelectLayerByAttribute(points_PS, "REMOVE_FROM_S
 matchcount = int(arcpy.management.GetCount(points_PS_inc)[0]) 
 print(f"pts selected: {matchcount}")
 
-
 if matchcount == 0: #no points, polys_all_dis2 is only oecm layer
     #Erase WDPA flat layer from OECMs to avoid overlap and double counting PAs and OECMS.
-    arcpy.analysis.Erase('polys_all_dis2', 'polys_all_dis', 'oecm_erase') #oecm_erase is the oecm flat layer
+    arcpy.analysis.Erase('polys_all_dis2', polys_all_dis, 'oecm_erase') #oecm_erase is the oecm flat layer
     print("poly erased to generate OECM polys")
 
     #Summarize polys_iuc within pilot scapes to calculate area in hectares for OECMs
     arcpy.analysis.SummarizeWithin(scapes, 'oecm_erase', 'PS_OECM_sum', keep_all_polygons=True, sum_shape=True, shape_unit='HECTARES')
     print("summarize within pilot scapes done")
 
-else: # TODO this part is untested. #points exist, oecm_union is the oecm layer
+else: #points exist, oecm_union is the oecm layer
     arcpy.management.CopyFeatures(points_PS, 'points_in_scapes2')
     print ("points copied")
 
@@ -60,7 +60,7 @@ else: # TODO this part is untested. #points exist, oecm_union is the oecm layer
     print("union done")
 
     #Erase WDPA flat layer from OECMs to avoid overlap and double counting PAs and OECMS.
-    arcpy.analysis.Erase('oecm_union', 'polys_all_dis', 'oecm_erase') #oecm_erase is the oecm flat layer
+    arcpy.analysis.Erase('oecm_union', polys_all_dis, 'oecm_erase') #oecm_erase is the oecm flat layer
     print("poly erased to generate OECM polys")
 
     #Summarize polys_iuc within pilot scapes to calculate area in hectares for OECMs
@@ -74,7 +74,7 @@ arcpy.management.CalculateField('PS_OECM_sum', 'OECM_pct', "!OECM_HA!/!Area_HA!*
 print("Field renamed and New pct field calculated")
 
 # Join fields in summary fc to copy of scapes dataset
-arcpy.management.JoinField(scapes, 'ScapeID', 'PS_OECM_sum', 'JOIN_ID', fields=['OECM_HA', 'OECM_pct'])
+arcpy.management.JoinField(scapes, 'ID', 'PS_OECM_sum', 'ID', fields=['OECM_HA', 'OECM_pct']) 
 print("Joined WDPA summary table to Scapes.shp")
 
 

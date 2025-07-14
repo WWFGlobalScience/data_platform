@@ -3,15 +3,15 @@
 
 
 #set workspace
-scratch_ws= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Scratch.gdb"
-analysis_ws=r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis"
+scratch_ws= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb"
+analysis_ws= r"L:\data_platform\Analysis\Prod_outputs\Cons_activities"
 
-#data inputs. must be on VPN connect to Sasquatch drive. fild gdb's downloaded from Protected Planet
-IACC_gdb=r"L:\data_platform\_Data\Pilots_data\icca_registry_gdb\icca_registry.gdb"
+#data inputs. must be on VPN connect to Sasquatch drive. file gdb's downloaded from Protected Planet
+IACC_gdb= r"L:\data_platform\_Data\prod_data\icca_registry_gdb\icca_registry.gdb"
 IACC_polys= f'{IACC_gdb}\icca_registry_polygon'
 IACC_points= f'{IACC_gdb}\icca_registry_point'
 
-scapes= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis\Pilot_scapes_EE.shp"
+scapes= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb\Prod_scapes"
 
 import arcpy
 import pandas as pd
@@ -87,5 +87,5 @@ arcpy.management.CalculateField('PS_IACC_sum', 'IACC_pct', "!IACC_HA!/!Area_HA!*
 print("Field renamed and New pct field calculated")
 
 # Join fields in summary fc to copy of scapes dataset
-arcpy.management.JoinField(scapes, 'ScapeID', 'PS_IACC_sum', 'JOIN_ID', fields=['IACC_HA', 'IACC_pct'])
+arcpy.management.JoinField(scapes, 'ID', 'PS_IACC_sum', 'ID', fields=['IACC_HA', 'IACC_pct'])
 print("Joined IACC summary table to Scapes.shp")
