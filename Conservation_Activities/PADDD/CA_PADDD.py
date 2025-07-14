@@ -2,15 +2,15 @@
 #Desired output: pilot landscapes shapefile with 1 additional fields: number of PADDD events
 
 #set workspace
-scratch_ws= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Scratch.gdb"
-analysis_ws=r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis"
+scratch_ws= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb"
+analysis_ws= r"L:\data_platform\Analysis\Prod_outputs\Cons_activities"
 
 #data inputs. must be on VPN connect to Sasquatch drive. fild gdb's downloaded from Protected Planet
 PADDD_folder=r"L:\data_platform\_Data\Pilots_data\Protected and Conserved Areas (PCA)_PADDD-20240920T202151Z-001\Protected and Conserved Areas (PCA)_PADDD"
 PADDD_polys= f'{PADDD_folder}\PADDDtracker_DataReleaseV2_1_2021_Poly.shp'
 PADDD_points= f'{PADDD_folder}\PADDDtracker_DataReleaseV2_1_2021_Pts.shp'
 
-scapes= r"C:\Users\mills\OneDrive - World Wildlife Fund, Inc\Documents\Pro Projects\Data_Platform\Analysis\Pilot_scapes_EE.shp"
+scapes= r"L:\data_platform\Analysis\Prod_outputs\scratch.gdb\Prod_scapes"
 
 import arcpy
 import pandas as pd
@@ -61,7 +61,7 @@ if matchcount2 > 0:
 #Join PADDD stats(point count, polygon count and polygon area) to copy of scapes dataset
 if arcpy.Exists('PADDD_pts_sum'):
     arcpy.management.AlterField('PADDD_pts_sum', 'Point_Count', 'PAD_pts')
-    arcpy.management.JoinField(scapes, 'ScapeID', 'PADDD_pts_sum', 'JOIN_ID', fields=['PAD_pts'])
+    arcpy.management.JoinField(scapes, 'ID', 'PADDD_pts_sum', 'ID', fields=['PAD_pts'])
     print("point stats joined")
 else: #TODO Test
     #add blank field "PAD_pts" to scapes
@@ -78,7 +78,7 @@ else: #TODO Test
 if arcpy.Exists('PADDD_poly_sum'):
     arcpy.management.AlterField('PADDD_poly_sum', 'sum_Area_HECTARES', 'PAD_HA')
     arcpy.management.AlterField('PADDD_poly_sum', 'Polygon_Count', 'PAD_polys')
-    arcpy.management.JoinField(scapes, 'ScapeID', 'PADDD_poly_sum', 'JOIN_ID', fields=['PAD_HA', 'PAD_polys'])
+    arcpy.management.JoinField(scapes, 'ID', 'PADDD_poly_sum', 'ID', fields=['PAD_HA', 'PAD_polys'])
     print("poly stats joined")
 
 else: #TODO Test
