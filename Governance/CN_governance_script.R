@@ -8,6 +8,8 @@ prod_scapes_EE <- st_read("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_C
 
 prod_scapes_EE <- st_make_valid(prod_scapes_EE)
 
+prod_scapes_EE <- prod_scapes_EE %>% mutate(prod_id = row_number(),
+                                            prod_area = st_area(geometry))
 # Load admin level 1 shapefiles for the entire globe
 adm1 <- ne_states(returnclass = "sf")
 
@@ -35,6 +37,7 @@ sci <- sci %>%
 adm1_joined <- adm1_clean %>%
   left_join(sci, by = c("iso_a2", "name" = "name"))
 
+# Reformat the data so indicators x year each get one column
 adm1_sci <- adm1_joined %>%
   select(iso_code, adm1_code, name, country, year, sci) %>%
   pivot_wider(
@@ -43,43 +46,46 @@ adm1_sci <- adm1_joined %>%
     names_glue = "{.value}_{year}_ind_GDL"
   )
 
-# Create and validate new object for administrative boundaries that intersect with prod_scapes_EE
-adm1_sci_prod_scapes <- adm1_sci %>%
-  filter(lengths(st_intersects(., prod_scapes_EE)) > 0)
+# Calculate area of each administrative unit
+adm1_sci <- adm1_sci %>%
+  mutate(adm1_area = st_area(geometry))
 
-adm1_sci_prod_scapes <- st_make_valid(adm1_sci_prod_scapes)
-
-st_write(adm1_sci_prod_scapes, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/adm1_sci_corruption.shp")
-
-# Calculate the area of intersection between the operational landscapes and the administrative boundaries that intersect them
-
-# Create intersection object
-intersections_sci <- st_intersection(
-  adm1_sci_prod_scapes %>% mutate(id1 = row_number()),
-  prod_scapes_EE %>% mutate(id2 = row_number())
+# Create intersection object between the administrative units and the production landscapes
+adm1_sci_prod_int <- st_intersection(
+  adm1_sci,
+  prod_scapes_EE %>% select(prod_id)
 )
 
-# Create column for area of overlap
-intersections_sci$overlap_area <- st_area(intersections_sci)
+# Calculate the area of intersection between the administrative units and the production landscapes
+adm1_sci_prod_int <- adm1_sci_prod_int %>%
+  mutate(int_area = st_area(geometry))
 
-# Create column for area of overlap in sq. km.
-intersections_sci$overlap_area_km2 <- set_units(intersections_sci$overlap_area, km^2) %>% drop_units()
+# Create a percentage column for how much of the administrative unit is in the production landscape
+adm1_sci_prod_long <- adm1_sci_prod_int %>%
+  mutate(
+    pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
+  )
 
-# Reset the sq. km. to numerics
-intersections_sci$overlap_area_num <- as.numeric(intersections_sci$overlap_area_km2)
+# Filter out any administrative units which have less than 25% of their area in a production landscape
+adm1_sci_prod_25 <- adm1_sci_prod_long %>%
+  filter(pct_adm1_in_prod >= 25)
 
-# Plot boxplot of area of intersection
-ggplot(intersections_sci, aes(y = overlap_area_num)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribution of Polygon Overlap Areas",
-    y = "Overlap Area (km²)",
-    x = ""
-  ) +
-  theme_minimal()
+# Filter out any administrative units which have less than 10% of their area in a production landscape
+adm1_sci_prod_10 <- adm1_sci_prod_long %>%
+  filter(pct_adm1_in_prod >=10)
+
+# Filter out any administrative units which have less than 5% of their area in a production landscape
+adm1_sci_prod_5 <- adm1_sci_prod_long %>%
+  filter(pct_adm1_in_prod >=5)
+
+write_sf(adm1_sci_prod_25, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_sci_25_pct.shp")
+write_sf(adm1_sci_prod_10, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_sci_10_pct.shp")
+write_sf(adm1_sci_prod_5, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_sci_5_pct.shp")
+
 
 ## Grand corruption
 
+# Reformat the data so indicators x year each get one column
 adm1_grand <- adm1_joined %>%
   select(iso_code, adm1_code, name, country, year, grand) %>%
   pivot_wider(
@@ -88,43 +94,46 @@ adm1_grand <- adm1_joined %>%
     names_glue = "{.value}_{year}_ind_GDL"
   )
 
-# Create and validate new object for administrative boundaries that intersect with prod_scapes_EE
-adm1_grand_prod_scapes <- adm1_grand %>%
-  filter(lengths(st_intersects(., prod_scapes_EE)) > 0)
+# Calculate area of each administrative unit
+adm1_grand <- adm1_grand %>%
+  mutate(adm1_area = st_area(geometry))
 
-adm1_grand_prod_scapes <- st_make_valid(adm1_grand_prod_scapes)
-
-st_write(adm1_grand_prod_scapes, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/adm1_grand_corruption.shp")
-
-# Calculate the area of intersection between the operational landscapes and the administrative boundaries that intersect them
-
-# Create intersection object
-intersections_grand <- st_intersection(
-  adm1_grand_prod_scapes %>% mutate(id1 = row_number()),
-  prod_scapes_EE %>% mutate(id2 = row_number())
+# Create intersection object between the administrative units and the production landscapes
+adm1_grand_prod_int <- st_intersection(
+  adm1_grand,
+  prod_scapes_EE %>% select(prod_id)
 )
 
-# Create column for area of overlap
-intersections_grand$overlap_area <- st_area(intersections_grand)
+# Calculate the area of intersection between the administrative units and the production landscapes
+adm1_grand_prod_int <- adm1_grand_prod_int %>%
+  mutate(int_area = st_area(geometry))
 
-# Create column for area of overlap in sq. km.
-intersections_grand$overlap_area_km2 <- set_units(intersections_grand$overlap_area, km^2) %>% drop_units()
+# Create a percentage column for how much of the administrative unit is in the production landscape
+adm1_grand_prod_long <- adm1_grand_prod_int %>%
+  mutate(
+    pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
+  )
 
-# Reset the sq. km. to numerics
-intersections_petty$overlap_area_num <- as.numeric(intersections_petty$overlap_area_km2)
+# Filter out any administrative units which have less than 25% of their area in a production landscape
+adm1_grand_prod_25 <- adm1_grand_prod_long %>%
+  filter(pct_adm1_in_prod >= 25)
 
-# Plot boxplot of area of intersection
-ggplot(intersections_petty, aes(y = overlap_area_num)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribution of Polygon Overlap Areas",
-    y = "Overlap Area (km²)",
-    x = ""
-  ) +
-  theme_minimal()
+# Filter out any administrative units which have less than 10% of their area in a production landscape
+adm1_grand_prod_10 <- adm1_grand_prod_long %>%
+  filter(pct_adm1_in_prod >=10)
+
+# Filter out any administrative units which have less than 5% of their area in a production landscape
+adm1_grand_prod_5 <- adm1_grand_prod_long %>%
+  filter(pct_adm1_in_prod >=5)
+
+write_sf(adm1_grand_prod_25, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_grand_25_pct.shp")
+write_sf(adm1_grand_prod_10, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_grand_10_pct.shp")
+write_sf(adm1_grand_prod_5, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_grand_5_pct.shp")
+
 
 ## Petty corruption
 
+# Reformat the data so indicators x year each get one column
 adm1_petty <- adm1_joined %>%
   select(iso_code, adm1_code, name, country, year, petty) %>%
   pivot_wider(
@@ -133,36 +142,38 @@ adm1_petty <- adm1_joined %>%
     names_glue = "{.value}_{year}_ind_GDL"
   )
 
-# Create and validate new object for administrative boundaries that intersect with prod_scapes_EE
-adm1_petty_prod_scapes <- adm1_petty %>%
-  filter(lengths(st_intersects(., prod_scapes_EE)) > 0)
+# Calculate area of each administrative unit
+adm1_petty <- adm1_petty %>%
+  mutate(adm1_area = st_area(geometry))
 
-adm1_petty_prod_scapes <- st_make_valid(adm1_petty_prod_scapes)
-
-st_write(adm1_petty_prod_scapes, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/adm1_petty_corruption.shp")
-# Calculate the area of intersection between the operational landscapes and the administrative boundaries that intersect them
-
-# Create intersection object
-intersections_petty <- st_intersection(
-  adm1_petty_prod_scapes %>% mutate(id1 = row_number()),
-  prod_scapes_EE %>% mutate(id2 = row_number())
+# Create intersection object between the administrative units and the production landscapes
+adm1_petty_prod_int <- st_intersection(
+  adm1_petty,
+  prod_scapes_EE %>% select(prod_id)
 )
 
-# Create column for area of overlap
-intersections_petty$overlap_area <- st_area(intersections_petty)
+# Calculate the area of intersection between the administrative units and the production landscapes
+adm1_petty_prod_int <- adm1_petty_prod_int %>%
+  mutate(int_area = st_area(geometry))
 
-# Create column for area of overlap in sq. km.
-intersections_petty$overlap_area_km2 <- set_units(intersections_petty$overlap_area, km^2) %>% drop_units()
+# Create a percentage column for how much of the administrative unit is in the production landscape
+adm1_petty_prod_long <- adm1_petty_prod_int %>%
+  mutate(
+    pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
+  )
 
-# Reset the sq. km. to numerics
-intersections_petty$overlap_area_num <- as.numeric(intersections_petty$overlap_area_km2)
+# Filter out any administrative units which have less than 25% of their area in a production landscape
+adm1_petty_prod_25 <- adm1_petty_prod_long %>%
+  filter(pct_adm1_in_prod >= 25)
 
-# Plot boxplot of area of intersection
-ggplot(intersections_petty, aes(y = overlap_area_num)) +
-  geom_boxplot() +
-  labs(
-    title = "Distribution of Polygon Overlap Areas",
-    y = "Overlap Area (km²)",
-    x = ""
-  ) +
-  theme_minimal()
+# Filter out any administrative units which have less than 10% of their area in a production landscape
+adm1_petty_prod_10 <- adm1_petty_prod_long %>%
+  filter(pct_adm1_in_prod >=10)
+
+# Filter out any administrative units which have less than 5% of their area in a production landscape
+adm1_petty_prod_5 <- adm1_petty_prod_long %>%
+  filter(pct_adm1_in_prod >=5)
+
+write_sf(adm1_petty_prod_25, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_petty_25_pct.shp")
+write_sf(adm1_petty_prod_10, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_petty_10_pct.shp")
+write_sf(adm1_petty_prod_5, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_petty_5_pct.shp")
