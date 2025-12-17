@@ -5,7 +5,7 @@ library(sf)
 prod_countries_EE <- st_read("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Prod_countries_EE/Prod_countries_EE.shp")
 
 # Load health data, do be used for several indicators, and create new vaccine variable that takes the mean percent of children vaccinated for each disease
-health <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Health Data v2.1.csv") %>%
+health <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/Health Data v2.1.csv") %>%
   mutate(vaccineage1 = rowMeans(select(., bcgage1:measlage1), na.rm = TRUE))
   
 # Percent of children under 5 years old who have received five standard vaccines (tuberculosis, diptheria, pertussis, tetanus, measles) 
@@ -63,7 +63,7 @@ underweightsev_prod_countries <- underweightsev %>%
 write_csv(underweightsev_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/underweightsev.csv")
 
 # International Poverty Line
-pip <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/pip.csv")
+pip <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/pip.csv")
   
 # Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 poverty <- pip %>%
@@ -111,7 +111,7 @@ disease_prod_countries <- disease %>%
 write_csv(disease_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/INTD.csv")
 
 # Maternal mortality rate
-maternal <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/maternal_WHO.csv") %>%
+maternal <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/maternal_WHO.csv") %>%
   rename(COUNTRY = GEO_NAME_SHORT)
 
 maternal <- merge(maternal, prod_countries_EE[, c("COUNTRY", "ISO3")], by = "COUNTRY", all.x = TRUE)
@@ -136,7 +136,7 @@ maternal_prod_countries <- maternal %>%
 write_csv(maternal_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/MM.csv")
 
 # Free from stunting, wasting, and overweight
-swo <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/wso_UNICEF.csv", skip = 8)
+swo <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/wso_UNICEF.csv", skip = 8)
 
 # Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 swo <- swo %>%
@@ -215,6 +215,9 @@ prod_scapes_EE <- st_read("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_C
 
 prod_scapes_EE <- st_make_valid(prod_scapes_EE)
 
+prod_scapes_EE <- prod_scapes_EE %>% mutate(prod_id = row_number(),
+                                            prod_area = st_area(geometry))
+
 # Load admin level 1 shapefile for the entire globe
 adm1 <- ne_states(returnclass = "sf")
 
@@ -225,10 +228,12 @@ adm1 <- st_transform(adm1, st_crs(prod_scapes_EE))
 adm1 <- st_make_valid(adm1)
 
 adm1_clean <- adm1 %>% select(iso_a2, adm1_code, name, geometry) %>%
-  mutate(adm1_code = str_sub(adm1_code, 1, 3))
+  mutate(adm1_code = str_sub(adm1_code, 1, 3),
+         adm1_id = row_number())
 
 iwi <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/GDL-Area_Database_Data-v441.csv")
-  
+
+# Reformat the data so indicators x year each get one column
 iwi <- iwi %>%
   filter(level == "Subnat") %>%
   rename(name = region,
@@ -240,35 +245,42 @@ iwi <- iwi %>%
     names_glue = "{.value}_{year}_pct_GDL"
   )
 
+# Join iwi and administrative data
 adm1_joined <- adm1_clean %>%
   left_join(iwi, by = c("adm1_code", "name" = "name"))
 
-# Plot the same shapefile from before and after join to make sure they're the same
-plot(adm1_joined %>%
-  filter(name == "Lagos"))
+# Calculate area of each administrative unit
+adm1_joined <- adm1_joined %>%
+  mutate(adm1_area = st_area(geometry))
 
-plot(adm1_clean %>%
-  filter(name == "Lagos"))
-
-# Create and validate new object for administrative boundaries that intersect with prod_scapes_EE
-adm1_pov_prod_scapes <- adm1_joined %>%
-  filter(lengths(st_intersects(., prod_scapes_EE)) > 0)
-
-adm1_pov_prod_scapes <- st_make_valid(adm1_pov_prod_scapes)
-
-st_write(adm1_pov_prod_scapes, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/adm1_pov.shp")
-
-
-intersections_pov <- st_intersection(
-  adm1_pov_prod_scapes %>% mutate(id1 = row_number()),
-  prod_scapes_EE %>% mutate(id2 = row_number())
+# Create intersection object between the administrative units and the production landscapes
+adm1_prod_int <- st_intersection(
+  adm1_joined,
+  prod_scapes_EE %>% select(prod_id)
 )
 
-# Create column for area of overlap
-intersections_pov$overlap_area <- st_area(intersections_pov)
+# Calculate the area of intersection between the administrative units and the production landscapes
+adm1_prod_int <- adm1_prod_int %>%
+  mutate(int_area = st_area(geometry))
 
-# Create column for area of overlap in sq. km.
-intersections_pov$overlap_area_km2 <- set_units(intersections_pov$overlap_area, km^2) %>% drop_units()
+# Create a percentage column for how much of the administrative unit is in the production landscape
+adm1_prod_long <- adm1_prod_int %>%
+  mutate(
+    pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
+  )
 
-# Reset the sq. km. to numerics
-intersections_pov$overlap_area_num <- as.numeric(intersections_pov$overlap_area_km2)
+# Filter out any administrative units which have less than 25% of their area in a production landscape
+adm1_prod_25 <- adm1_prod_long %>%
+  filter(pct_adm1_in_prod >= 25)
+
+# Filter out any administrative units which have less than 10% of their area in a production landscape
+adm1_prod_10 <- adm1_prod_long %>%
+  filter(pct_adm1_in_prod >=10)
+
+# Filter out any administrative units which have less than 5% of their area in a production landscape
+adm1_prod_5 <- adm1_prod_long %>%
+  filter(pct_adm1_in_prod >=5)
+
+write_sf(adm1_prod_25, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_pov_25_pct.shp")
+write_sf(adm1_prod_10, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_pov_10_pct.shp")
+write_sf(adm1_prod_5, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Output_data/subnat_pov_5_pct.shp")
