@@ -2,13 +2,13 @@ library(tidyverse)
 library(sf)
 
 #Load production landscapes shapefiles
-prod_countries_EE <- st_read("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Prod_countries_EE/Prod_countries_EE.shp")
+prod_countries_EE <- st_read("data_inputs/Prod_countries_EE/Prod_countries_EE.shp")
 
 # Load health data, do be used for several indicators, and create new vaccine variable that takes the mean percent of children vaccinated for each disease
-health <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/Health Data v2.1.csv") %>%
+health <- read_csv("People/Health Data v2.1.csv") %>%
   mutate(vaccineage1 = rowMeans(select(., bcgage1:measlage1), na.rm = TRUE))
   
-# Percent of children under 5 years old who have received five standard vaccines (tuberculosis, diptheria, pertussis, tetanus, measles) 
+## Percent of children under 5 years old who have received five standard vaccines (tuberculosis, diptheria, pertussis, tetanus, measles) 
 
 # Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 vaccine <- health %>%
@@ -24,9 +24,9 @@ vaccine <- health %>%
 vaccine_prod_countries <- vaccine %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(vaccine_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/vaccine.csv")
+write_csv(vaccine_prod_countries, paste0("People/vaccine_",Sys.Date(),".csv"))
 
-# Child mortality (Number of children dying under five year of age, per 1,000 live births in a given year)
+## Child mortality (Number of children dying under five year of age, per 1,000 live births in a given year)
 
 # Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 child_mort <- health %>%
@@ -42,9 +42,9 @@ child_mort <- health %>%
 child_mort_prod_countries <- child_mort %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(child_mort_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/child_mort.csv")
+write_csv(child_mort_prod_countries, paste0("People/child_mort_",Sys.Date(),".csv"))
 
-# Severely underweight (Percentage of children aged 0-59 months who are below minus three standard deviations from median weight-for-age of the World Health Organization (WHO) Child Growth Standards)
+## Severely underweight (Percentage of children aged 0-59 months who are below minus three standard deviations from median weight-for-age of the World Health Organization (WHO) Child Growth Standards)
 
 # Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 underweightsev <- health %>%
@@ -60,12 +60,12 @@ underweightsev <- health %>%
 underweightsev_prod_countries <- underweightsev %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(underweightsev_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/underweightsev.csv")
+write_csv(underweightsev_prod_countries, paste0("People/underweightsev_",Sys.Date(),".csv"))
 
-# International Poverty Line
-pip <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/pip.csv")
+## International Poverty Line
+pip <- read_csv("People/pip.csv")
   
-# Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
+## Transform the dataset to only include national level data, only columns for year, country, ISO, and indicator, and transform so each column gets the indicator value per year
 poverty <- pip %>%
   filter(reporting_level == "national") %>%
   filter(welfare_type == "income") %>%
@@ -83,10 +83,10 @@ poverty <- pip %>%
 poverty_prod_countries <- poverty %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(poverty_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/poverty.csv")
+write_csv(poverty_prod_countries, paste0("People/poverty_",Sys.Date(),".csv"))
 
 # Number of people requiring interventions against neglected tropical disease
-disease <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/disease.csv") %>%
+disease <- read_csv("People/disease.csv") %>%
   rename(COUNTRY = GEO_NAME_SHORT)
 
 disease <- merge(disease, prod_countries_EE[, c("COUNTRY", "ISO3")], by = "COUNTRY", all.x = TRUE)
@@ -108,10 +108,10 @@ disease <- disease %>%
 disease_prod_countries <- disease %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(disease_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/INTD.csv")
+write_csv(disease_prod_countries, paste0("People/INTD_",Sys.Date(),".csv"))
 
 # Maternal mortality rate
-maternal <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/maternal_WHO.csv") %>%
+maternal <- read_csv("People/maternal_WHO.csv") %>%
   rename(COUNTRY = GEO_NAME_SHORT)
 
 maternal <- merge(maternal, prod_countries_EE[, c("COUNTRY", "ISO3")], by = "COUNTRY", all.x = TRUE)
@@ -133,7 +133,7 @@ maternal <- maternal %>%
 maternal_prod_countries <- maternal %>%
   filter(isocode3 %in% prod_countries_EE$ISO3)
 
-write_csv(maternal_prod_countries, "C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/MM.csv")
+write_csv(maternal_prod_countries, paste0("People/MM_",Sys.Date(),".csv"))
 
 # Free from stunting, wasting, and overweight
 swo <- read_csv("C:/Users/readd/Documents/WWF-US_Consultancy/2024-25_Consultancy/Conservation_Navigator/Data/Source_data/wso_UNICEF.csv", skip = 8)

@@ -1,0 +1,22 @@
+<<gbif download>>
+  Your download is being processed by GBIF:
+  https://www.gbif.org/occurrence/download/0026749-241107131044228
+  Most downloads finish within 15 min.
+  Check status with
+  occ_download_wait('0026749-241107131044228')
+  After it finishes, use
+  d <- occ_download_get('0026749-241107131044228') %>%
+    occ_download_import()
+  to retrieve your download.
+Download Info:
+  Username: scheng_wwf
+  E-mail: samantha.cheng@wwfus.org
+  Format: SIMPLE_CSV
+  Download key: 0026749-241107131044228
+  Created: 2024-11-21T20:46:40.402+00:00
+Citation Info:  
+  Please always cite the download DOI when using this data.
+  https://www.gbif.org/citation-guidelines
+  DOI: 10.15468/dl.fb55cn
+  Citation:
+  GBIF Occurrence Download https://doi.org/10.15468/dl.fb55cn Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2024-11-21
