@@ -10,7 +10,7 @@ Scapes <- st_read(dsn = "ESSFUseCase/ESSFUseCase.gdb", layer = "Prod_scapes_EE")
 print(st_crs(Scapes))
 plot(st_geometry(Scapes), main = "Scape")
 
-flood_Sf <- st_read(dsn = "FloodData/FloodData.gdb", layer = "FloodArchive_region__Project")
+flood_Sf <- st_read(dsn = "FloodData/FloodData.gdb", layer = "FloodArchive_region__Project") #data dowloaded directly from https://floodobservatory.colorado.edu/ and projected to equal area
 plot(st_geometry(flood_Sf),main = "Flood Events")
 print(st_crs(flood_Sf))
 
@@ -96,5 +96,6 @@ for (OPScape in unique_scapes){
   message(paste("Saved plot:", plot_filename))
   
 }
+
 
 
