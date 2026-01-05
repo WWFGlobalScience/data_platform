@@ -7,7 +7,7 @@ library(scatterpie)
 library(readr)
 
 # --- Data Preparation Section ---
-# Data is assumed to be downloaded directly from Google Earth Engine (GEE).
+# Data is downloaded directly from Google Earth Engine (GEE).
 # The original GEE script is referenced for context: https://code.earthengine.google.com/8db981c5ce05183263088f1626f40a6a
 
 # Define the years for which AGB (Above Ground Biomass) data files exist.
@@ -15,7 +15,6 @@ library(readr)
 years <- c(2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021)
 
 # Use `lapply` to efficiently read and process each AGB data file for the defined years.
-# `lapply` iterates over the `years` vector, applying an anonymous function to each year.
 lapply(years, function(year) {
   # Construct the full file path for the current year's CSV file.
   # Files are expected in a 'Biomass/GEE_Download' subdirectory.
@@ -141,3 +140,4 @@ for (OPScape in unique_scapes) {
   # Display a message confirming that the plot has been saved.
   message(paste("Saved plot:", plot_filename))
 }
+
