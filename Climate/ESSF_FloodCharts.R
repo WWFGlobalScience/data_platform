@@ -1,3 +1,6 @@
+# ------------------------------------------------------------------------------
+# Load required libraries
+# ------------------------------------------------------------------------------
 library(sf)
 library(dplyr)
 library(ggplot2)
@@ -6,28 +9,50 @@ library(scatterpie)
 library(plotly) # For interactive plots
 library(htmlwidgets) # To save interactive plots as HTML
 
+# ------------------------------------------------------------------------------
+# Load landscape (scape) spatial data
+# ------------------------------------------------------------------------------
 Scapes <- st_read(dsn = "ESSFUseCase/ESSFUseCase.gdb", layer = "Prod_scapes_EE")
-print(st_crs(Scapes))
-plot(st_geometry(Scapes), main = "Scape")
+print(st_crs(Scapes)) # Print the coordinate reference sysetm(crs) of the landscape data
+#plot(st_geometry(Scapes), main = "Scape") #For quick visual check
 
-flood_Sf <- st_read(dsn = "FloodData/FloodData.gdb", layer = "FloodArchive_region__Project") #data dowloaded directly from https://floodobservatory.colorado.edu/ and projected to equal area
-plot(st_geometry(flood_Sf),main = "Flood Events")
-print(st_crs(flood_Sf))
+# ------------------------------------------------------------------------------
+# Load flood event spatial data
+# ------------------------------------------------------------------------------
 
-# Check CRS of both layers
+# Read flood event data from a File Geodatabase
+# Data source: https://floodobservatory.colorado.edu/
+# Data have been projected to an equal-area projection prior to use
+flood_Sf <- st_read(dsn = "FloodData/FloodData.gdb", layer = "FloodArchive_region__Project") 
+#plot(st_geometry(flood_Sf),main = "Flood Events") #Plot for quick visual
+#print(st_crs(flood_Sf))
+
+# ------------------------------------------------------------------------------
+# Check and report CRS consistency
+# ------------------------------------------------------------------------------
 crs_landscape <- st_crs(Scapes)
 crs_flood <- st_crs(flood_Sf)
 
 print(paste("Landscape CRS:", crs_landscape$input))
 print(paste("Flood Data CRS:", crs_flood$input))
 
+# ------------------------------------------------------------------------------
+# Geometry validation
+# ------------------------------------------------------------------------------
 scape_sf <- st_make_valid(Scapes)
 flood_sf <- st_make_valid(flood_Sf)
 
-#Clip the flood data to the landscape
+# ------------------------------------------------------------------------------
+# Spatial intersection
+# ------------------------------------------------------------------------------
+
+# Clip flood events to landscape boundaries
+# This keeps only flood events that intersect each landscape
 Scapes_flood <- st_intersection(flood_sf,scape_sf)
 
-# Prepare data for plotting: drop geometry, convert types, handle dates
+# ------------------------------------------------------------------------------
+# Prepare data for timeline plotting
+# ------------------------------------------------------------------------------
 plot_data <- Scapes_flood %>%
   st_drop_geometry() %>% # We don't need spatial geometry for the timeline plot itself
   as_tibble() %>%
@@ -50,19 +75,29 @@ plot_data <- Scapes_flood %>%
   ) %>%
   filter(!is.na(BEGAN_Date)& (DEAD > 0 | DISPLACED > 0)) # Remove rows with no date or no affected people for pie slices
 
+# ------------------------------------------------------------------------------
+# Prepare plotting parameters
+# ------------------------------------------------------------------------------
+
 unique_scapes <- unique(plot_data$Name)
 
 
 output_dir <- "FloodData_Plots"  
 
-#Create plot
+# ------------------------------------------------------------------------------
+# Generate timeline plots (one per landscape)
+# ------------------------------------------------------------------------------
+
+# Loop through each unique landscape
 for (OPScape in unique_scapes){
   
   message(paste("\n---Processing Scape:",OPScape,"----"))
   
+  # Subset flood data for the current landscape
   scape_specific_data <- plot_data %>%
     filter(Name == OPScape)
   
+  # Create timeline plot with scatter pies
   timeline_plot <- ggplot(scape_specific_data) +
     geom_scatterpie(
       aes(x = BEGAN_Date, y = y, r = Plot_Radius, color = Plot_Color_Variable),
@@ -96,6 +131,7 @@ for (OPScape in unique_scapes){
   message(paste("Saved plot:", plot_filename))
   
 }
+
 
 
 
