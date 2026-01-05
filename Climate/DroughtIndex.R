@@ -4,7 +4,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-pdsi_raster<- brick("DroughtData/global_SCPDSI_1990-2023.tif")
+pdsi_raster<- brick("DroughtData/global_SCPDSI_1990-2023.tif") #data directly downloaded from here: https://crudata.uea.ac.uk/cru/data/drought/
 Scapes <- st_read(dsn = "ESSFUseCase/ESSFUseCase.gdb", layer = "Prod_scapes_EE")
 
 #Add unique ID for the raster join
@@ -121,3 +121,4 @@ for (OPScape in unique_scapes){
 }
 
 cat("\nAll plots generated and saved to:", output_dir, "\n")
+
