@@ -7,8 +7,8 @@ library(scatterpie)
 library(readxl)
 
 #Prepare the data
-EmissionFossil <- read_excel("GHGEmission/LatestData/Fossil_2024.xlsx", sheet = 2, skip = 11) #direct download from Global Carbon Budget
-EmissionLULUCF <- read_excel("GHGEmission/LatestData/LULUCF_2024.xlsx", sheet = 2) #Calculated the average of four bookkeeping models that is directly downloaded from Global Carbon Budget
+EmissionFossil <- read_excel("GHGEmission/LatestData/Fossil_2024.xlsx", sheet = 2, skip = 11) #direct download from Global Carbon Budget (https://globalcarbonbudget.org/the-latest-gcb-data/)
+EmissionLULUCF <- read_excel("GHGEmission/LatestData/LULUCF_2024.xlsx", sheet = 2) #Calculated the average of four bookkeeping models that is directly downloaded from Global Carbon Budget (https://globalcarbonbudget.org/the-latest-gcb-data/)
 
 names(EmissionFossil)[colnames(EmissionFossil)=="...1"] <- "Year"
 EmissionFossil <- subset(EmissionFossil, Year >=1990)
@@ -130,4 +130,5 @@ for (OPScape in unique_scapes){
   message(paste("Saved plot:", plot_filename))
   
 }
+
 
