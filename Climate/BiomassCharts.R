@@ -1,3 +1,6 @@
+# ------------------------------------------------------------------------------
+# Load required libraries
+# ------------------------------------------------------------------------------
 library(sf)
 library(dplyr)
 library(tidyr)
@@ -6,15 +9,35 @@ library(lubridate)
 library(scatterpie)
 library(readr)
 
-# --- Data Preparation Section ---
-# Data is downloaded directly from Google Earth Engine (GEE).
-# The original GEE script is referenced for context: https://code.earthengine.google.com/8db981c5ce05183263088f1626f40a6a
+# ------------------------------------------------------------------------------
+# Data preparation section
+# ------------------------------------------------------------------------------
 
-# Define the years for which AGB (Above Ground Biomass) data files exist.
-# These years correspond to the suffixes in the CSV filenames.
+# NOTE:
+# The AGB (Above-Ground Biomass) data used here are downloaded directly
+# from Google Earth Engine (GEE).
+# The corresponding GEE script used to generate these CSV files is available at:
+# https://code.earthengine.google.com/8db981c5ce05183263088f1626f40a6a
+
+
+# ------------------------------------------------------------------------------
+# Define available years of AGB data
+# ------------------------------------------------------------------------------
+
+# Vector of years for which AGB summary CSV files exist.
+# Each year corresponds to one CSV file named as "AGB_Sum<year>.csv".
 years <- c(2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021)
 
-# Use `lapply` to efficiently read and process each AGB data file for the defined years.
+# ------------------------------------------------------------------------------
+# Read and process AGB CSV files (one per year)
+# ------------------------------------------------------------------------------
+
+# Use lapply to loop over each year and load the corresponding CSV file.
+# Each iteration:
+#   - Reads the CSV
+#   - Selects relevant columns
+#   - Renames the biomass column to the actual year
+#   - Assigns the result to a year-specific data frame in the global environment
 lapply(years, function(year) {
   # Construct the full file path for the current year's CSV file.
   # Files are expected in a 'Biomass/GEE_Download' subdirectory.
@@ -36,8 +59,12 @@ lapply(years, function(year) {
   assign(paste0("AGB_", year), df, envir = .GlobalEnv)
 })
 
-# Create a list containing all the individual AGB data frames that were just loaded.
-# This list will be used for merging them into a single, comprehensive data frame.
+# ------------------------------------------------------------------------------
+# Combine all yearly AGB data frames
+# ------------------------------------------------------------------------------
+
+# Create a list containing all year-specific AGB data frames.
+# These objects were created dynamically in the previous step.
 all_agb_dfs <- list(AGB_2010, AGB_2015, AGB_2016, AGB_2017,
                     AGB_2018, AGB_2019, AGB_2020, AGB_2021)
 
@@ -51,6 +78,10 @@ common_cols <- c("ID", "Name", "Country", "Area_km2")
 # `all = TRUE` ensures that all rows are kept, even if a particular ID/Name combination
 # doesn't exist in all years (resulting in NAs for missing year's biomass).
 AGB_allyears <- Reduce(function(x, y) merge(x, y, by = common_cols, all = TRUE), all_agb_dfs)
+
+# ------------------------------------------------------------------------------
+# Prepare data for plotting
+# ------------------------------------------------------------------------------
 
 # Extract unique "Name" values from the merged data.
 # These "Names" likely represent specific landscapes or areas for which individual plots will be generated.
@@ -87,7 +118,9 @@ if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
 
-# --- Plotting Loop Section ---
+# ------------------------------------------------------------------------------
+# Plotting loop: generate one plot per landscape
+# ------------------------------------------------------------------------------
 # Loop through each unique landscape ('OPScape') to generate a separate plot for each.
 for (OPScape in unique_scapes) {
   # Display a message indicating which scape is currently being processed.
@@ -140,4 +173,5 @@ for (OPScape in unique_scapes) {
   # Display a message confirming that the plot has been saved.
   message(paste("Saved plot:", plot_filename))
 }
+
 
