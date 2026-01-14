@@ -17,6 +17,12 @@ library(scales)
 library(countrycode)
 
 # ------------------------------------------------------------------------------
+# Load production landscapes shapefile
+# ------------------------------------------------------------------------------
+prod_countries_EE <- st_read("Spatial Data/Prod_countries_EE/Prod_countries_EE.shp", quiet = TRUE) %>%
+  st_make_valid()
+
+# ------------------------------------------------------------------------------
 # Load maternal mortality data, keep COUNTRY rows only
 # ------------------------------------------------------------------------------
 maternal <- read_csv("maternal_WHO.csv", show_col_types = FALSE) %>%
@@ -128,4 +134,5 @@ for (iso in iso_list) {
     )
   
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300)
+
 }
