@@ -43,3 +43,4 @@ cpi_plot <- ggplot(cpi, aes(x = Year, y = Value, color = Country, group = Countr
 
 cpi_plot
 
+
