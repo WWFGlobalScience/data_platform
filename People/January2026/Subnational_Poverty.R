@@ -131,3 +131,18 @@ st_write(
   layer = "adm1_pov25",
   delete_layer = TRUE
 )
+pov_cols <- names(adm1_prod_25_out) %>%
+  stringr::str_detect("^iwipov35_\\d{4}_pct_GDL$")
+
+scape_pov <- adm1_prod_25_out %>%
+  st_drop_geometry() %>%
+  group_by(scape_id, scape_name) %>%
+  summarise(
+    across(
+      all_of(names(adm1_prod_25_out)[pov_cols]),
+      ~ weighted.mean(.x, w = as.numeric(int_area), na.rm = TRUE)
+    ),
+    scape_area = sum(as.numeric(int_area), na.rm = TRUE),
+    n_adm1     = n_distinct(paste(iso3, name)),
+    .groups = "drop"
+  )
