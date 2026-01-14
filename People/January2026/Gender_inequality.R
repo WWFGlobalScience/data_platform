@@ -1,6 +1,5 @@
 # ------------------------------------------------------------------------------
 # Gender Inequality Index (GII) — National (UNDP HDR)
-# Minimal-change, annotated script based on Mabel’s original draft
 # ------------------------------------------------------------------------------
 # What this script does:
 #  1) Loads WWF country boundaries (Prod_countries_EE.shp) and pulls ISO3 codes
@@ -148,3 +147,4 @@ for (iso in country_codes) {
   
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300)
 }
+
