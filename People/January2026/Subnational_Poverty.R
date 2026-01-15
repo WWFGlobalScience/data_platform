@@ -20,130 +20,181 @@ install.packages("remotes")
 remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
 
+# # ------------------------------------------------------------------------------
+# # Load and validate prod_scapes_EE sf object
+# # ------------------------------------------------------------------------------
+# prod_scapes_EE <- st_read(
+#   "Spatial Data/Prod_scapes_EE_wflags/Prod_scapes_EE.shp",
+#   quiet = TRUE
+# ) %>%
+#   st_make_valid() %>%
+#   mutate(
+#     scape_id   = ID,     # 
+#     scape_name = Name    # rename now to avoid collisions later
+#   )
+# 
+# 
+# # ------------------------------------------------------------------------------
+# # Load admin level 1 shapefile for the entire globe
+# # ------------------------------------------------------------------------------
+# adm1 <- ne_states(returnclass = "sf") %>%
+#   st_transform(st_crs(prod_scapes_EE)) %>%
+#   st_make_valid()
+# 
+# # Keep only what we need and create ISO3 for joining to GDL
+# adm1_clean <- adm1 %>%
+#   transmute(
+#     iso_a2 = iso_a2,
+#     iso3   = countrycode(iso_a2, origin = "iso2c", destination = "iso3c"),
+#     name   = name,
+#     geometry = geometry
+#   ) %>%
+#   filter(!is.na(iso3))
+
 # ------------------------------------------------------------------------------
-# Load and validate prod_scapes_EE sf object
+# Load GDL subnational areas that overlap with landscapes (at least 25% of scape)
 # ------------------------------------------------------------------------------
-prod_scapes_EE <- st_read(
-  "Spatial Data/Prod_scapes_EE_wflags/Prod_scapes_EE.shp",
-  quiet = TRUE
+
+gdl_scape_overlap_25 <- st_read(
+  "data_inputs/scape_GDL_overlap25.shp",
+  quiet=TRUE
 ) %>%
-  st_make_valid() %>%
-  mutate(
-    scape_id   = ID,     # 
-    scape_name = Name    # rename now to avoid collisions later
-  )
-
-
-# ------------------------------------------------------------------------------
-# Load admin level 1 shapefile for the entire globe
-# ------------------------------------------------------------------------------
-adm1 <- ne_states(returnclass = "sf") %>%
-  st_transform(st_crs(prod_scapes_EE)) %>%
   st_make_valid()
 
-# Keep only what we need and create ISO3 for joining to GDL
-adm1_clean <- adm1 %>%
-  transmute(
-    iso_a2 = iso_a2,
-    iso3   = countrycode(iso_a2, origin = "iso2c", destination = "iso3c"),
-    name   = name,
-    geometry = geometry
-  ) %>%
-  filter(!is.na(iso3))
+gdl_scape_overlap_25 <- gdl_scape_overlap_25 %>%
+  rename(iso_code = iso_cod,
+         scape_name = scap_nm,
+         scape_id = scape_d,
+         scape_area_m2 = scp_r_2,
+         overlap_area_m2 = ovrl__2,
+         pct_overlap = pct_vrl)
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational poverty data
 # ------------------------------------------------------------------------------
-iwi <- read_csv(
-  "GDL-Area_Database_Data-v441.csv",
-  show_col_types = FALSE
-)
+# iwi <- read_csv(
+#   "GDL-Area_Database_Data-v441.csv",
+#   show_col_types = FALSE
+# )
 
-# Reformat the data so indicators x year each get one column
+sess <- gdl_session("G95BikZsJG5NnUZbfPczkQ9nTUwSIHKz3Z6ukk-De44")
+sess <- set_dataset(sess, 'wealth')
+sess <- set_indicator(sess, 'iwipov35')
+
+countries <- gdl_countries(sess)
+
+sess <- set_countries(sess, c(countries$isocode3))
+iwipov35 <- gdl_request(sess)
+
+# Reformat the data for joining
 # NOTE: Use ISO3 + region name as join key to ADM1 polygons
-iwi_wide <- iwi %>%
-  filter(level == "Subnat") %>%
-  transmute(
-    iso3    = isocode3,   # country ISO3 in the GDL file
-    name    = region,     # subnational region name in the GDL file
-    country = country,
-    year    = year,
-    iwipov35 = iwipov35
+
+colnames(iwipov35) <- tolower(colnames(iwipov35))
+
+iwi_wide <- iwipov35 %>%
+  arrange(
+    iso_code, year
   ) %>%
-  mutate(
-    iso3 = toupper(str_trim(iso3)),
-    name = str_squish(name),
-    year = as.integer(year),
-    iwipov35 = as.numeric(iwipov35)
+  select(
+    -continent,-level,-country,-iso_code,-region
   ) %>%
   pivot_wider(
     names_from  = year,
     values_from = iwipov35,
-    names_glue  = "{.value}_{year}_pct_GDL"
+    names_glue  = "{.value}_{year}"
   )
 
-# ------------------------------------------------------------------------------
-# Join ADM1 polygons with poverty table
-# ------------------------------------------------------------------------------
-adm1_joined <- adm1_clean %>%
-  mutate(name = str_squish(name)) %>%
-  left_join(iwi_wide, by = c("iso3", "name"))
-
-# Calculate area of each administrative unit (requires projected CRS; we used prod_scapes CRS)
-adm1_joined <- adm1_joined %>%
-  mutate(adm1_area = st_area(geometry))
-
-# ------------------------------------------------------------------------------
-# Intersect ADM1 with production landscapes
-# ------------------------------------------------------------------------------
-adm1_prod_int <- st_intersection(
-  adm1_joined,
-  prod_scapes_EE %>% select(scape_id, scape_name)
-) %>%
-  mutate(int_area = st_area(geometry))
-
-
-# Percent of ADM1 that overlaps the production landscape
-adm1_prod_long <- adm1_prod_int %>%
-  mutate(
-    pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
-  )
+# Reformat the data so indicators x year each get one column
+# NOTE: Use ISO3 + region name as join key to ADM1 polygons
+# iwi_wide <- iwi %>%
+#   filter(level == "Subnat") %>%
+#   transmute(
+#     iso3    = isocode3,   # country ISO3 in the GDL file
+#     name    = region,     # subnational region name in the GDL file
+#     country = country,
+#     year    = year,
+#     iwipov35 = iwipov35
+#   ) %>%
+#   mutate(
+#     iso3 = toupper(str_trim(iso3)),
+#     name = str_squish(name),
+#     year = as.integer(year),
+#     iwipov35 = as.numeric(iwipov35)
+#   ) %>%
+#   pivot_wider(
+#     names_from  = year,
+#     values_from = iwipov35,
+#     names_glue  = "{.value}_{year}_pct_GDL"
+#   )
 
 # ------------------------------------------------------------------------------
-# Filter ADM1 units with >= 25% overlap with production landscapes
+# Join GDL subnational polygons with IWI table
 # ------------------------------------------------------------------------------
-adm1_prod_25 <- adm1_prod_long %>%
-  filter(pct_adm1_in_prod >= 25)
+gdl_join <- gdl_scape_overlap_25 %>%
+  left_join(iwi_wide, by = c("gdlcode"))
+
+# # ------------------------------------------------------------------------------
+# # Join ADM1 polygons with poverty table
+# # ------------------------------------------------------------------------------
+# adm1_joined <- adm1_clean %>%
+#   mutate(name = str_squish(name)) %>%
+#   left_join(iwi_wide, by = c("iso3", "name"))
+# 
+# # Calculate area of each administrative unit (requires projected CRS; we used prod_scapes CRS)
+# adm1_joined <- adm1_joined %>%
+#   mutate(adm1_area = st_area(geometry))
+
+# # ------------------------------------------------------------------------------
+# # Intersect ADM1 with production landscapes
+# # ------------------------------------------------------------------------------
+# adm1_prod_int <- st_intersection(
+#   adm1_joined,
+#   prod_scapes_EE %>% select(scape_id, scape_name)
+# ) %>%
+#   mutate(int_area = st_area(geometry))
+# 
+# 
+# # Percent of ADM1 that overlaps the production landscape
+# adm1_prod_long <- adm1_prod_int %>%
+#   mutate(
+#     pct_adm1_in_prod = as.numeric(int_area / adm1_area) * 100
+#   )
+
+# # ------------------------------------------------------------------------------
+# # Filter ADM1 units with >= 25% overlap with production landscapes
+# # ------------------------------------------------------------------------------
+# adm1_prod_25 <- adm1_prod_long %>%
+#   filter(pct_adm1_in_prod >= 25)
 
 # ------------------------------------------------------------------------------
 # Write output (25% only)
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
-adm1_prod_25_out <- adm1_prod_25 %>%
+gdl_prod_25_out <- gdl_join %>%
   st_make_valid() %>%
   st_transform(4326)
 
 gpkg_name <- paste0("subnat_pov_25_pct_", run_date, ".gpkg")
 
 st_write(
-  adm1_prod_25_out,
+  gdl_prod_25_out,
   gpkg_name,
-  layer = "adm1_pov25",
+  layer = "gdl_pov25",
   delete_layer = TRUE
 )
 
 # ------------------------------------------------------------------------------
 # figures ADM1 poverty % of households within each Scape
 # ------------------------------------------------------------------------------
-fig_dir <- "Scapes_ADM1_Trends"
+fig_dir <- "Scapes_GDL_Poverty_Trends"
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Pivot wide -> long for plotting
-poverty_long_scape <- adm1_prod_25_out %>%
+poverty_long_scape <- gdl_prod_25_out %>%
   st_drop_geometry() %>%
   # De-duplicate potential multipart intersections
   distinct(
-    scape_id, scape_name, iso3, name,
+    scape_id, scape_name, gdlcode, region,
     across(starts_with("iwipov35_")),
     .keep_all = TRUE
   ) %>%
@@ -155,7 +206,7 @@ poverty_long_scape <- adm1_prod_25_out %>%
   mutate(
     year = as.integer(str_extract(year, "\\d{4}")),
     poverty_pct = as.numeric(poverty_pct),
-    adm1_name = str_squish(name)
+    gdl_name = str_squish(region)
   )
 
 scape_list <- sort(unique(poverty_long_scape$scape_id))
@@ -176,13 +227,13 @@ for (sid in scape_list) {
   
   out_png <- file.path(
     fig_dir,
-    paste0("IWI_Poverty_ADM1_Trends_Scape_", sid, "_", safe_scape, ".png")
+    paste0("IWI_Poverty_GDL_Trends_Scape_", sid, "_", safe_scape, ".png")
   )
   
   # Drop NAs for line drawing and ensure correct ordering
   df_line <- df_sub %>%
     filter(!is.na(poverty_pct)) %>%
-    arrange(adm1_name, year)
+    arrange(gdl_name, year)
   
  
   p <- ggplot() +
@@ -191,9 +242,9 @@ for (sid in scape_list) {
       aes(
         x = year,
         y = poverty_pct,
-        group = adm1_name,
-        color = adm1_name,
-        linetype = adm1_name
+        group = gdl_name,
+        color = gdl_name,
+        linetype = gdl_name
       ),
       linewidth = 1.0,
       alpha = 0.8
@@ -203,25 +254,25 @@ for (sid in scape_list) {
       aes(
         x = year,
         y = poverty_pct,
-        color = adm1_name
+        color = gdl_name
       ),
       size = 1.6,
       alpha = 0.8
     ) +
     labs(
       title = paste("Subnational Poverty Trends in", scape_nm),
-      subtitle = "Administrative Level 1 (ADM1) units overlapping the production landscape by ≥25%",
+      subtitle = "Subnational areas overlapping with at least 25% of operational landscape",
       x = "Year",
       y = "Percent (%) of households",
-      color = "ADM1 unit",
-      linetype = "ADM1 unit",
+      color = "Subnational areas",
+      linetype = "Subnational areas",
       caption = "Source: Global Data Lab (GDL). IWI-based poverty proxy (% of households with IWI < 35)."
     ) +
     scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) +
     theme_minimal(base_family = "opensans", base_size = 13) +
     theme(
       plot.title    = element_text(size = 12, face = "bold", hjust = 0.5),
-      plot.subtitle = element_text(size = 11, hjust = 0.5),
+      plot.subtitle = element_text(size = 8, hjust = 0.5),
       axis.text     = element_text(color = "black"),
       axis.line     = element_line(color = "black"),
       legend.position = "right",

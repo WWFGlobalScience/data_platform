@@ -57,6 +57,14 @@ gdl_scape_overlap_25 <- st_read(
   ) %>%
   st_make_valid()
 
+gdl_scape_overlap_25 <- gdl_scape_overlap_25 %>%
+  rename(iso_code = iso_cod,
+         scape_name = scap_nm,
+         scape_id = scape_d,
+         scape_area_m2 = scp_r_2,
+         overlap_area_m2 = ovrl__2,
+         pct_overlap = pct_vrl)
+
 # ------------------------------------------------------------------------------
 # Load GDL subnational gender development data
 # ------------------------------------------------------------------------------
@@ -137,7 +145,7 @@ ggplot() +
 # Write output (25% only)
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
-gdl_prod_25_out <- gdl_scape_overlap_25 %>%
+gdl_prod_25_out <- gdl_join %>%
   st_make_valid() %>%
   st_transform(4326)
 
@@ -157,7 +165,7 @@ fig_dir <- "Scapes_GDL_Trends"
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Pivot wide -> long for plotting
-sgdi_long_scape <- gdl_prod_25_out %>%
+sgdi_long_scape <- gdl_join %>%
   st_drop_geometry() %>%
   # De-duplicate potential multipart intersections
   distinct(
