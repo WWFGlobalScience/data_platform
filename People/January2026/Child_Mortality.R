@@ -1,6 +1,7 @@
 # ------------------------------------------------------------------------------
 # Child mortality under age 5 (per 1,000 live births) — National (GDL Health v2.1)
 # Variable: u5mort
+# Data link: https://globaldatalab.org/asset/600/Health%20Data%20v2.1.csv
 # Outputs:
 #  A) GeoPackage: countries layer with u5mort_{year}_rto_GDL columns
 #  B) One time-series figure per country
@@ -116,3 +117,4 @@ for (iso in iso_list) {
   
   ggsave(out_png, plot = p, width = 8.5, height = 5.2, dpi = 300)
 }
+
