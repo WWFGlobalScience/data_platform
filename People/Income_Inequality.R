@@ -38,9 +38,14 @@ Decile4_wide <- PovertyGap_Data %>%
   ) %>%
   rename(country = country_name)
 
-# Step 4: Join with country shapefile
+# Step 4: Join with country shapefile and export as geopackage
 people_data_ii <- countries_sf %>%
   left_join(Decile4_wide, by = c("COUNTRY" = "country"))
+
+st_write(people_data_ii,
+         "people_data_ii.gpkg",
+         layer = "people_data_ii",
+         delete_layer = TRUE)
 
 # Step 5: Reshape to long format for plotting
 long_data <- people_data_ii %>%
@@ -85,3 +90,4 @@ for (country in unique(long_data$COUNTRY)) {
   plot_path <- file.path("Income_Inequality_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", country), "_II.png"))
   ggsave(plot_path, plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
