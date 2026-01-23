@@ -1,10 +1,15 @@
+# Number of conflict events within a country per year ACLED
+# Data link: https://acleddata.com/data-export-tool/
+# ACLED_YYYY per year per country 
+
+
 library(sf)
 library(dplyr)
 library(tidyr)
 library(readr)
 library(ggplot2)
 
-# Load shapefile
+# Load country shapefile. Extract the unique COUNTRY names from the shapefile attribute table
 prod_countries <- st_read("Prod_countries_EE.shp")
 country_names <- st_drop_geometry(prod_countries) %>% pull(COUNTRY) %>% unique()
 
@@ -55,3 +60,4 @@ for (ctry in unique(long_data$COUNTRY)) {
   plot_path <- file.path("ACLED_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", ctry), "_ACLED.png"))
   ggsave(plot_path, plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
