@@ -1,5 +1,7 @@
 # ------------------------------------------------------------------------------
 # Subnational Corruption Index (SCI) — Baseline (GDL, governance dataset)
+# Data link: https://globaldatalab.org/asset/476/GDL-CorruptionData-1.0.csv
+# The raw data links require a login to access
 # Outputs:
 #   1) GeoPackage of overlap polygons with SCI columns (sci_YYYY)
 #   2) One figure per scape: SCI trends for overlapping subnational areas
