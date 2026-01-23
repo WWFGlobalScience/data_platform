@@ -1,5 +1,6 @@
 # ------------------------------------------------------------------------------
 # Percent of children under 5 who received five standard vaccines (BCG, DPT, TT, Measles)
+# Data Link: https://globaldatalab.org/asset/600/Health%20Data%20v2.1.csv
 # Indicator: vaccineage1 (mean of bcgage1:measlage1)
 # Output A: GeoPackage (countries layer with appended indicator columns)
 # Output B: One time-series figure per country
@@ -128,4 +129,5 @@ for (iso in iso_list) {
   
   ggsave(out_png, plot = p, width = 8.5, height = 5.2, dpi = 300)
 }
+
 
