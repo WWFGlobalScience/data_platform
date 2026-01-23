@@ -1,4 +1,5 @@
-# People – Tenure Security (% of adult population perceiving land rights as secure)
+# People – Perceived Tenure Security (% of adult population perceiving land rights as secure)
+# https://www.prindex.net/data/
 # Source: data_comparison.csv
 # Years: 2020 and 2024
 
@@ -63,3 +64,4 @@ for (ctry in unique(tenure_all$country)) {
   ggsave(file.path("Tenure_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", ctry), "_Tenure.png")),
          plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
