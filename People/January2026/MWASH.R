@@ -1,3 +1,14 @@
+# ------------------------------------------------------------------------------
+# Mortality rate attributed to unsafe water, unsafe sanitation and lack of hygiene
+# Source: WHO Global Health Observatory
+# URL: https://www.who.int/data/gho/data/indicators/indicator-details/GHO/mortality-rate-attributed-to-exposure-to-unsafe-wash-services-(per-100-000-population)-(sdg-3-9-2)
+# Indicator: MWASH_YYYY = Mortality rate per 100,000 population
+# Years: 2012, 2015, 2019
+# Note: 2012 and 2015 data not comparable to 2019 due to methodology changes so only using 2019 here
+# Note: Single time-point data per country - no time-series figures generated
+# Output A: GeoPackage (countries layer with appended MWASH_YYYY columns)
+# ------------------------------------------------------------------------------
+
 library(sf)
 library(dplyr)
 library(tidyr)
@@ -27,10 +38,25 @@ people_data_mwash <- read_csv("WASH.csv") %>%
   filter(country %in% country_names, Dim1 == "Both sexes", year == "2019") %>%
   select(country, value = Value)
 
-# Clean country names for matching if needed
-people_data_mwash <- people_data_mwash %>%
-  mutate(country = str_trim(country))
+MWASH_wide <- read_csv("WASH.csv") %>%
+  rename(country = Location) %>%
+  mutate(year = as.character(Period)) %>%
+  filter(country %in% country_names, Dim1 == "Both sexes") %>%
+  pivot_wider(names_from = year, values_from = Value, names_prefix = "MWASH_") %>%
+  select(country, starts_with("MWASH_"))
 
+# Clean country names for matching if needed
+#people_data_mwash <- people_data_mwash %>%
+#  mutate(country = str_trim(country))
+ ------------------------------------------------------------------------------
+# Join to shapefile and export GeoPackage
+# ------------------------------------------------------------------------------
+people_mwash <- countries_sf %>%
+  left_join(MWASH_wide, by = c("COUNTRY" = "country"))
+
+# Export as GeoPackage
+st_write(people_mwash, "MWASH_Mortality_Water_Sanitation.gpkg", 
+         layer = "wash_mortality", delete_layer = TRUE, quiet = TRUE)
 # Create output folder
 dir.create("MWASH_Plots", showWarnings = FALSE)
 
@@ -61,3 +87,4 @@ for (i in 1:nrow(people_data_mwash)) {
   plot_path <- file.path("MWASH_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", df_sub$country), "_MWASH_2019.png"))
   ggsave(plot_path, plot = p, width = 6, height = 5, dpi = 300)
 }
+
