@@ -2,6 +2,7 @@
 #Extent to which countries have laws and regulations that guarantee women aged 15-49 access to 
 #sexual and reproductive health care, information and education (2019 and 2022)
 # Source: WHO
+# Data link: https://platform.who.int/data/maternal-newborn-child-adolescent-ageing/indicator-explorer-new/MCA/extent-countries-have-laws-regulations-that-guarantee-women-aged-15-49-access-to-sexual-and-reproductive-health-care-information-and-education-(sdg-5.6.2)
 # Indicator: rr = Value String (%)
 # Output A: GeoPackage (countries layer with appended indicator columns)
 # Note: There is data either for countries either in 2019 or 2022 so no figures were created
@@ -75,4 +76,5 @@ out_gpkg <- file.path( paste0("reprod_rights_WHO_", out_date, ".gpkg"))
 if (file.exists(out_gpkg)) file.remove(out_gpkg)
 
 st_write(rr_sf, dsn = out_gpkg, layer = "reproductive_rights", delete_layer = TRUE, quiet = TRUE)
+
 
