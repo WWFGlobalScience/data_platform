@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # INTERNATIONAL POVERTY LINE (World Bank PIP)
 # Indicator:% of population below the international poverty line (income-based)
-# Data link: 
+# Data link: https://pip.worldbank.org/poverty-calculator
 # Output A: GeoPackage (countries layer with appended indicator columns)
 # Output B: One time-series figure per country
 # ------------------------------------------------------------------------------
@@ -123,4 +123,5 @@ for (iso in iso_list) {
     )
   
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300)
+
 }
