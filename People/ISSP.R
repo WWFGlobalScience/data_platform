@@ -4,7 +4,7 @@
 # https://www.fao.org/in-action/rural-livelihoods-dataset-rulis/en/ > Indicator is > select all countries, all years, and national dissagregation
 # Data Summarization: Average income (in 2017 dollars) of small scale food producers
 # Average income of small scale food producers (in 2017 $USD) 2014-2020
-# Data Output Description: table of countries with appended columns ISSP_2014 - ISSP_2020
+# Data Output Description: geopackage with table of countries with appended columns ISSP_2014 - ISSP_2020 & country figures 
 library(sf)
 library(dplyr)
 library(tidyr)
@@ -30,9 +30,14 @@ ISSP_wide <- read_csv("ISSP.csv") %>%
   ) %>%
   select(Country, starts_with("ISSP_"))
 
-# Join with shapefile
+# Join with shapefile and export into geopackage 
 people_data_issp <- countries_sf %>%
   left_join(ISSP_wide, by = c("COUNTRY" = "Country"))
+
+st_write(people_data_issp,
+         "people_data_issp.gpkg",
+         layer = "people_data_issp",
+         delete_layer = TRUE)
 
 # Reshape to long format for plotting
 long_data <- people_data_issp %>%
@@ -72,3 +77,4 @@ for (country in unique(long_data$COUNTRY)) {
   plot_path <- file.path("ISSP_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", country), "_ISSP.png"))
   ggsave(plot_path, plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
