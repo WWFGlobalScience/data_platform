@@ -3,67 +3,19 @@
 # Index developed and maintained by Global Data Lab
 # Data is retrieved from the GDL using an API access token - G95BikZsJG5NnUZbfPczkQ9nTUwSIHKz3Z6ukk-De44
 # ------------------------------------------------------------------------------
-library(sf)
 library(dplyr)
 library(stringr)
 library(readr)
 library(tidyr)
-library(rnaturalearth)
 library(countrycode)
 library(units)
 library(gdldata)
-
-install.packages("remotes")
-remotes::install_github("ropensci/rnaturalearthhires")
-library(rnaturalearthhires)
-
-# ------------------------------------------------------------------------------
-# Load and validate prod_scapes_EE sf object
-# ------------------------------------------------------------------------------
-# prod_scapes_EE <- st_read(
-#   "data_inputs/Prod_scapes_EE_wflags/Prod_scapes_EE.shp",
-#   quiet = TRUE
-# ) %>%
-#   st_make_valid() %>%
-#   mutate(
-#     scape_id   = ID,     # 
-#     scape_name = Name    # rename now to avoid collisions later
-#   )
-# 
-# # ------------------------------------------------------------------------------
-# # Load GDL shapefile for the entire globe using the subnational units that are included for this dataset
-# # ------------------------------------------------------------------------------
-# gdl_bound <- st_read("data_inputs/GDL Shapefiles V6.6/GDL Shapefiles V6.6 large.shp") %>%
-#   st_transform(st_crs(prod_scapes_EE)) %>%
-#   st_make_valid()
-
-# # Keep only what we need and create ISO3 for joining to GDL
-# gdl_bound_clean <- gdl_bound %>%
-#   transmute(
-#     iso_a2 = iso_a2,
-#     iso3   = countrycode(iso_a2, origin = "iso2c", destination = "iso3c"),
-#     name   = name,
-#     geometry = geometry
-#   ) %>%
-#   filter(!is.na(iso3))
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational areas that overlap with landscapes (at least 25% of scape)
 # ------------------------------------------------------------------------------
 
-gdl_scape_overlap_25 <- st_read(
-  "data_inputs/scape_GDL_overlap25.shp",
-  quiet=TRUE
-  ) %>%
-  st_make_valid()
-
-gdl_scape_overlap_25 <- gdl_scape_overlap_25 %>%
-  rename(iso_code = iso_cod,
-         scape_name = scap_nm,
-         scape_id = scape_d,
-         scape_area_m2 = scp_r_2,
-         overlap_area_m2 = ovrl__2,
-         pct_overlap = pct_vrl)
+gdl_scape_overlap_25 <- read_rds("data_inputs/gdl_scape_overlap_25.rds")
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational gender development data
@@ -103,60 +55,15 @@ gdl_join <- gdl_scape_overlap_25 %>%
   left_join(sgdi_wide, by = c("gdlcode"))
 
 # ------------------------------------------------------------------------------
-# Intersect GDL with production landscapes
-# ------------------------------------------------------------------------------
-# gdl_prod_int <- st_intersection(
-#   gdl_bound_joined,
-#   prod_scapes_EE %>% select(scape_id, scape_name, Area_km2)
-# ) %>%
-#   mutate(int_area = st_area(geometry)) %>%
-#   mutate(Area_m2 = as.numeric(Area_km2) * 1000000)
-# 
-# 
-# # Percent of ADM1 that overlaps the production landscape
-# gdl_prod_long <- gdl_prod_int %>%
-#   mutate(
-#     pct_prod_in_gdl = round(as.numeric(int_area / Area_m2) * 100, 2)
-#   )
-# 
-# # ------------------------------------------------------------------------------
-# # Filter ADM1 units that overlap with production landscapes (at least 25% of landscape)
-# # ------------------------------------------------------------------------------
-# gdl_prod_25 <- gdl_prod_long %>%
-#   filter(pct_prod_in_gdl >= 25)
-
-# ------------------------------------------------------------------------------
-# Check accuracy by mapping production landscapes over GDL boundaries - by country,
-# otherwise takes a long time to map
-# ------------------------------------------------------------------------------
-library(ggplot2)
-
-test <- filter(gdl_join, iso_cod == "COD")
-prod_test <- filter(prod_scapes_EE, Country == "Democratic Republic of the Congo")
-base <- filter (gdl_sf, iso_code == "COD")
-
-ggplot() +
-  geom_sf(data = base, color="gray", alpha=1.0) +
-  geom_sf(data = test, aes(fill = pct_vrl)) +
-  geom_sf(data = prod_test, color="magenta", alpha=0.4) +
-  coord_sf()
-
-# ------------------------------------------------------------------------------
-# Write output (25% only)
+# Write output (25% only) to a csv that should be joined to the GDL base layer in ArcGIS for mapping on the platform
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
 gdl_prod_25_out <- gdl_join %>%
-  st_make_valid() %>%
-  st_transform(4326)
+  select(-region,-scape_name,-country)
 
-gpkg_name <- paste0("sgdi_25_pct_", run_date, ".gpkg")
+filename <- paste0("People/January2026/sgdi_25_pct_", run_date, ".csv")
 
-st_write(
-  gdl_prod_25_out,
-  gpkg_name,
-  layer = "gdl_sgdi25",
-  delete_layer = TRUE
-)
+write.csv(gdl_prod_25_out,paste0(filename))
 
 # ------------------------------------------------------------------------------
 # figures GDL SGDI within each Scape

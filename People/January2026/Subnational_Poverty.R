@@ -55,19 +55,7 @@ library(rnaturalearthhires)
 # Load GDL subnational areas that overlap with landscapes (at least 25% of scape)
 # ------------------------------------------------------------------------------
 
-gdl_scape_overlap_25 <- st_read(
-  "data_inputs/scape_GDL_overlap25.shp",
-  quiet=TRUE
-) %>%
-  st_make_valid()
-
-gdl_scape_overlap_25 <- gdl_scape_overlap_25 %>%
-  rename(iso_code = iso_cod,
-         scape_name = scap_nm,
-         scape_id = scape_d,
-         scape_area_m2 = scp_r_2,
-         overlap_area_m2 = ovrl__2,
-         pct_overlap = pct_vrl)
+gdl_scape_overlap_25 <- read_rds("data_inputs/gdl_scape_overlap_25.rds")
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational poverty data
@@ -171,17 +159,11 @@ gdl_join <- gdl_scape_overlap_25 %>%
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
 gdl_prod_25_out <- gdl_join %>%
-  st_make_valid() %>%
-  st_transform(4326)
+  select(-region,-scape_name,-country)
 
-gpkg_name <- paste0("subnat_pov_25_pct_", run_date, ".gpkg")
+filename <- paste0("People/January2026/iwi_25_pct_", run_date, ".csv")
 
-st_write(
-  gdl_prod_25_out,
-  gpkg_name,
-  layer = "gdl_pov25",
-  delete_layer = TRUE
-)
+write.csv(gdl_prod_25_out,paste0(filename))
 
 # ------------------------------------------------------------------------------
 # figures ADM1 poverty % of households within each Scape
