@@ -4,7 +4,7 @@
 # Field: RATE_PER_100000_N
 # Output A: GeoPackage (countries layer with appended indicator columns)
 # Output B: One time-series figure per country
-#Data link: 
+#Data link: https://data.who.int/indicators/i/C071DCB/AC597B1
 # ------------------------------------------------------------------------------
 
 library(sf)
@@ -136,3 +136,4 @@ for (iso in iso_list) {
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300)
 
 }
+
