@@ -1,5 +1,7 @@
 # ------------------------------------------------------------------------------
 # Subnational Petty Corruption Trends— Baseline (GDL, governance dataset)
+# https://globaldatalab.org/asset/476/GDL-CorruptionData-1.0.csv
+# The raw data links require a login to access
 # Outputs:
 #   1) GeoPackage of overlap polygons with SCI columns (petty_YYYY)
 #   2) One figure per scape: petty corruption trends for overlapping subnational areas
