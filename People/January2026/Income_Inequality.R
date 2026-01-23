@@ -1,5 +1,5 @@
 # People – Percentage of national income earned by the 4th decile of income earners
-# Source: https://www.worldbank.org/en/topic/poverty/brief/global-database-of-shared-prosperity
+# Source: https://www.worldbank.org/en/topic/poverty/brief/global-database-of-shared-prosperity THIS REQUIRES AN ACCOUNT
 # Definition: Share of national income earned by the 4th income decile
 
 library(sf)
@@ -90,4 +90,5 @@ for (country in unique(long_data$COUNTRY)) {
   plot_path <- file.path("Income_Inequality_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", country), "_II.png"))
   ggsave(plot_path, plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
 
