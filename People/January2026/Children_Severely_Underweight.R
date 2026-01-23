@@ -7,8 +7,7 @@
 #  B) GeoPackage of WWF country boundaries joined with the same indicator columns
 #  C) One time-series figure per country
 #
-# Data link:
-# Downloaded:
+# Data link:https://globaldatalab.org/asset/600/Health%20Data%20v2.1.csv
 # ------------------------------------------------------------------------------
 
 # ---- Libraries ----
@@ -186,3 +185,4 @@ for (iso in iso_list) {
   # Save figure
   ggsave(out_png, plot = p, width = 8.5, height = 5.2, dpi = 300)
 }
+
