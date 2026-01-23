@@ -1,7 +1,7 @@
 #
 #Indicator: Number of people requiring interventions against neglected tropical diseases(WHO)
 #INTD_YYYY
-# Data link:
+# Data link:https://www.who.int/data/gho/data/indicators/indicator-details/GHO/reported-number-of-people-requiring-interventions-against-ntds?bookmarkId=148f1bf9-876a-40ee-8ed2-97d3e376a86e
 # Output A: GeoPackage (countries layer with appended indicator columns)
 # Output B: One time-series figure per country
 # ------------------------------------------------------------------------------
@@ -148,4 +148,5 @@ for (iso in iso_list) {
   
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300)
 }
+
 
