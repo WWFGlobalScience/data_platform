@@ -63,11 +63,13 @@ gdl_scape_overlap <- gdl_scape_intersection %>%
   ungroup() %>%
   mutate(pct_overlap_scape = round(overlap_area_m2 / Area_m2.1,2)) %>%
   mutate(pct_overlap_subnat = round(overlap_area_m2 / Area_m2,2)) %>%
-  select(-Country,-continent,-Area_km2) %>%
+  select(-Country,-continent,-Area_km2.1,-Area_km2) %>%
   rename(scape_name = Name,
-         scape_id = ID,
-         scape_area_m2 = Area_m2.1,
-         subnat_area_m2 = Area_m2) %>%
+         sc_area_m2 = Area_m2.1,
+         sn_area_m2 = Area_m2,
+         ov_area_m2 = overlap_area_m2,
+         pct_scape = pct_overlap_scape,
+         pct_subnat = pct_overlap_subnat) %>%
   st_drop_geometry()
 
 # ------------------------------------------------------------------------------
@@ -82,14 +84,19 @@ gdl_scape_overlap <- gdl_scape_intersection %>%
 # ------------------------------------------------------------------------------
 
 gdl_scape_overlap_retained <- gdl_scape_overlap %>%
-  filter(pct_overlap_scape >= 0.25 | pct_overlap_subnat >= 0.95)
+  filter(pct_scape >= 0.25 | pct_subnat >= 0.95)
+  
 
 # # Optional: If you want the intersected geometry for only those >=25% pairs,
 # # join back to the intersection sf and filter.
-# gdl_scape_intersection_25 <- gdl_scape_intersection %>%
-#   semi_join(gdl_scape_overlap_25, by = c("gdlcode", "ID"))
+
+gdl_scape_overlap_retained_shp <- gdl_scape_overlap_retained %>%
+  left_join(select(gdl_scape_intersection,gdlcode,ID,geometry), by = c("gdlcode", "ID"))
+
+st_write(gdl_scape_overlap_retained_shp, "gdl_scape_overlap_retained.gpkg",append=FALSE)
 
 write_rds(gdl_scape_overlap_retained,"gdl_scape_overlap_retained.rds")
+
 write_rds(gdl_scape_overlap,"gdl_scape_overlap.rds")
 
 # write.csv(gdl_scape_overlap_25,
