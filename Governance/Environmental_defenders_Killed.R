@@ -49,19 +49,17 @@ countries_sf <- st_read(shapefile_path, quiet = TRUE) %>%
 # ------------------------------------------------------------------------------
 # read_csv() will guess column types. If latitude contains any non-numeric characters
 # (e.g., symbols, stray text, unicode minus), it may import as character.
-# We normalize unicode minus and use parse_number() to coerce safely to numeric. 
-# It will drop bad lat/long (~190 as of this time) and filter to murders only
+# We normalize unicode minus and use parse_number() to coerce safely to numeric.
 victims_data <- read_csv(
-  "defenders-data.csv",
+  "LATESTDATAHERE.csv",
   show_col_types = FALSE
 ) %>%
-  clean_names() %>%
+  clean_names() %>%  # standardizes column names to snake_case
   mutate(
+    # Normalize unicode minus signs (−) to regular hyphen (-), then extract numeric portion
     latitude  = parse_number(str_replace_all(latitude,  "\u2212", "-")),
     longitude = parse_number(str_replace_all(longitude, "\u2212", "-"))
-  ) %>%
-  filter(act_type == "Murder") %>%
-  filter(!is.na(latitude), !is.na(longitude))
+  )
 
 # ------------------------------------------------------------------------------
 # Step 2b: Convert CSV rows into an sf point layer
@@ -169,4 +167,3 @@ for (ctry in sort(unique(ps_long$COUNTRY))) {
     dpi = 300
   )
 }
-

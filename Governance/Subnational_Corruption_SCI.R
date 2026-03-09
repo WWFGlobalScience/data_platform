@@ -1,7 +1,5 @@
 # ------------------------------------------------------------------------------
 # Subnational Corruption Index (SCI) — Baseline (GDL, governance dataset)
-# Data link: https://globaldatalab.org/asset/476/GDL-CorruptionData-1.0.csv
-# The raw data links require a login to access
 # Outputs:
 #   1) GeoPackage of overlap polygons with SCI columns (sci_YYYY)
 #   2) One figure per scape: SCI trends for overlapping subnational areas
@@ -19,8 +17,7 @@ library(scales)
 # Load GDL subnational areas that overlap with landscapes (at least 25% of scape)
 # ------------------------------------------------------------------------------
 
-gdl_scape_overlap_25 <- read_rds("data_inputs/gdl_scape_overlap_25.rds") %>%
-  select(-region)
+gdl_scape_overlap_retained <- readRDS("data_inputs/gdl_scape_overlap_retained.rds")
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational corruption data (SCI)
@@ -51,28 +48,50 @@ sci_wide <- sci %>%
 # ------------------------------------------------------------------------------
 # Join overlap polygons with SCI table
 # ------------------------------------------------------------------------------
-gdl_join <- gdl_scape_overlap_25 %>%
-  left_join(sci_wide, by = "gdlcode")
+gdl_join <- gdl_scape_overlap_retained %>%
+  left_join(select(sci_wide,-region), by = "gdlcode")
 
 # ------------------------------------------------------------------------------
-# Write output (25% only)
+# Write output to CSV
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
-gdl_prod_25_out <- gdl_join %>%
-  select(-region,-scape_name,-country)
+gdl_prod_out <- gdl_join %>%
+  rename(scape_id = ID)
 
-filename <- paste0("Governance/subnat_corruption_sci_25_pct_", run_date, ".csv")
+filename <- paste0("Governance/subnat_corruption_sci_", run_date, ".csv")
 
-write.csv(gdl_prod_25_out,paste0(filename))
+write.csv(gdl_prod_out,paste0(filename))
+
+# ------------------------------------------------------------------------------
+# Write output to GeoPackage
+# ------------------------------------------------------------------------------#
+# Read in the overlapped areas from GPKG
+gdl_scapes_overlap <- st_read(
+  "data_inputs/gdl_scape_overlap_retained.gpkg",
+  quiet = TRUE
+) %>%
+  st_make_valid()
+
+gdl_scapes_overlap <- gdl_scapes_overlap %>% select(gdlcode,ID,geom)
+
+gdl_prod_out2 <- gdl_scapes_overlap %>%
+  left_join(gdl_join, by = c("gdlcode", "ID"))%>%
+  rename(scape_id = ID)
+
+gdl_prod_out2 <- st_transform(gdl_prod_out2, 4326)
+
+filename2 <- paste0("Governance/subnat_corruption_sci_", run_date, ".gpkg")
+
+st_write(gdl_prod_out2, paste0(filename2), layer = "subnational_corruption_index", delete_layer = TRUE)
 
 # ------------------------------------------------------------------------------
 # Figures: SCI trends within each scape (lines = overlapping GDL subnational areas)
 # ------------------------------------------------------------------------------
-fig_dir <- "Scapes_GDL_Corruption_SCI_Trends"
+fig_dir <- paste0("Scapes_GDL_Corruption_SCI_Trends/",run_date)
+
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-sci_long_scape <- gdl_join %>%
-  st_drop_geometry() %>%
+sci_long_scape <- gdl_prod_out %>%
   distinct(
     scape_id, scape_name, gdlcode, region,
     across(starts_with("sci_")),
@@ -87,9 +106,17 @@ sci_long_scape <- gdl_join %>%
     year = as.integer(str_extract(year, "\\d{4}")),
     corruption_index = as.numeric(corruption_index),
     gdl_name = str_squish(region)
-  )
+  ) %>%
+  filter(!is.na(corruption_index))
 
 scape_list <- sort(unique(sci_long_scape$scape_id))
+
+##Define palette based on the maximum number of subnational areas per scape
+nb.cols <- max(tally(group_by(distinct(select(sci_long_scape,gdlcode,scape_id)),scape_id))$n)
+
+#Extend an existing palette (e.g., Set3) to that number
+library(RColorBrewer)
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(nb.cols)
 
 for (sid in scape_list) {
   
@@ -134,19 +161,21 @@ for (sid in scape_list) {
     ) +
     labs(
       title = paste("Subnational Corruption Trends (SCI) in", scape_nm),
-      subtitle = "Subnational areas overlapping with at least 25% of operational landscape",
+      subtitle = "Subnational areas overlapping with the operational landscape",
       x = "Year",
       y = "Index value",
       color = "Subnational areas",
       linetype = "Subnational areas",
       caption = "Source: Global Data Lab (GDL), governance dataset. Indicator: Subnational Corruption Index (SCI)."
     ) +
-    scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) +
+    scale_x_continuous(breaks = seq(1995, 2022, by = 1)) +
+    scale_colour_manual(values = mycolors) +
     theme_minimal(base_size = 13) +
     theme(
       plot.title    = element_text(size = 12, face = "bold", hjust = 0.5),
       plot.subtitle = element_text(size = 8, hjust = 0.5),
       axis.text     = element_text(color = "black"),
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
       axis.line     = element_line(color = "black"),
       legend.position = "right",
       legend.title  = element_text(size = 11),
@@ -160,3 +189,22 @@ for (sid in scape_list) {
   ggsave(out_png, p, width = 7.5, height = 4.5, dpi = 300, bg = "white")
 }
 
+### Test map
+gdl_prod_out3 <- sf::st_cast(gdl_prod_out2, "MULTIPOLYGON")
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data=gdl_prod_out3, aes(fill=fullsci_2022))
+
+p <- ggplot() +
+  geom_polygon(data = world_data, aes(x = long, y = lat, group = group,fill = "gray90", color = "gray50")) +
+  geom_sf(data=gdl_prod_out3, aes(fill=fullsci_2022)) +
+  geom_sf(data=prod_scapes_EE,aes(fill=NA, color="orange",linewidth=0.5)) +
+  coord_sf()
+
+ggplotly(p)  

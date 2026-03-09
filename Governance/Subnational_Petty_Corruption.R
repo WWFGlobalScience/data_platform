@@ -1,7 +1,5 @@
 # ------------------------------------------------------------------------------
 # Subnational Petty Corruption Trends— Baseline (GDL, governance dataset)
-# https://globaldatalab.org/asset/476/GDL-CorruptionData-1.0.csv
-# The raw data links require a login to access
 # Outputs:
 #   1) GeoPackage of overlap polygons with SCI columns (petty_YYYY)
 #   2) One figure per scape: petty corruption trends for overlapping subnational areas
@@ -19,8 +17,7 @@ library(scales)
 # Load GDL subnational areas that overlap with landscapes (at least 25% of scape)
 # ------------------------------------------------------------------------------
 
-gdl_scape_overlap_25 <- read_rds("data_inputs/gdl_scape_overlap_25.rds") %>%
-  select(-region)
+gdl_scape_overlap_retained <- readRDS("data_inputs/gdl_scape_overlap_retained.rds")
 
 # ------------------------------------------------------------------------------
 # Load GDL subnational corruption data (SCI)
@@ -28,7 +25,6 @@ gdl_scape_overlap_25 <- read_rds("data_inputs/gdl_scape_overlap_25.rds") %>%
 sess <- gdl_session("5YY0sJHmjCstN2EgcTWqsZuUo8_mzcMQVX_2xPMmv7I")
 sess <- set_dataset(sess, "governance")
 sess <- set_indicator(sess, "petty")
-
 
 countries <- gdl_countries(sess)
 sess <- set_countries(sess, c(countries$isocode3))
@@ -51,30 +47,53 @@ petty_wide <- petty%>%
 # ------------------------------------------------------------------------------
 # Join overlap polygons with petty table
 # ------------------------------------------------------------------------------
-gdl_join <- gdl_scape_overlap_25 %>%
-  left_join(petty_wide, by = "gdlcode")
+gdl_join <- gdl_scape_overlap_retained %>%
+  left_join(select(petty_wide,-region), by = "gdlcode")
 
 # ------------------------------------------------------------------------------
 # Write output (25% only)
 # ------------------------------------------------------------------------------
 run_date <- format(Sys.Date(), "%Y_%m_%d")
-gdl_prod_25_out <- gdl_join %>%
-  select(-region,-scape_name,-country)
 
-filename <- paste0("Governance/subnat_corruption_petty_25_pct_", run_date, ".csv")
+gdl_prod_out <- gdl_join %>%
+  rename(scape_id = ID)
 
-write.csv(gdl_prod_25_out,paste0(filename))
+filename <- paste0("Governance/subnat_corruption_petty_", run_date, ".csv")
+
+write.csv(gdl_prod_out,paste0(filename))
+
+# ------------------------------------------------------------------------------
+# Write output to GeoPackage
+# ------------------------------------------------------------------------------#
+# Read in the overlapped areas from GPKG
+gdl_scapes_overlap <- st_read(
+  "data_inputs/gdl_scape_overlap_retained.gpkg",
+  quiet = TRUE
+) %>%
+  st_make_valid()
+
+gdl_scapes_overlap <- gdl_scapes_overlap %>% select(gdlcode,ID,geom)
+
+gdl_prod_out2 <- gdl_scapes_overlap %>%
+  left_join(gdl_join, by = c("gdlcode", "ID")) %>%
+  rename(scape_id = ID)
+
+gdl_prod_out2 <- st_transform(gdl_prod_out2, 4326)
+
+filename2 <- paste0("Governance/subnat_corruption_petty_", run_date, ".gpkg")
+
+st_write(gdl_prod_out2, paste0(filename2), layer = "subnational_petty_corruption", delete_layer = TRUE)
 
 # ------------------------------------------------------------------------------
 # Figures: petty trends within each scape (lines = overlapping GDL subnational areas)
 # ------------------------------------------------------------------------------
-fig_dir <- "Scapes_Petty_Corruption_Trends"
+fig_dir <- paste0("Scapes_Petty_Corruption_Trends/",run_date)
+
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-petty_long_scape <- gdl_out %>%
-  st_drop_geometry() %>%
+petty_long_scape <- gdl_prod_out %>%
   distinct(
-    scape_id, scape_name, gdlcode, region.x,
+    scape_id, scape_name, gdlcode, region,
     across(starts_with("petty_")),
     .keep_all = TRUE
   ) %>%
@@ -86,14 +105,23 @@ petty_long_scape <- gdl_out %>%
   mutate(
     year = as.integer(str_extract(year, "\\d{4}")),
     corruption_index = as.numeric(corruption_index),
-    gdl_name = str_squish(region.x)
-  )
+    gdl_name = str_squish(region)
+  ) %>% 
+  filter(!is.na(corruption_index))
 
-scape_list <- sort(unique(sci_long_scape$scape_id))
+scape_list <- sort(unique(petty_long_scape$scape_id))
 
+##Define palette based on the maximum number of subnational areas per scape
+nb.cols <- max(tally(group_by(distinct(select(petty_long_scape,gdlcode,scape_id)),scape_id))$n)
+
+#Extend an existing palette (e.g., Set3) to that number
+library(RColorBrewer)
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(nb.cols)
+
+#Make figures
 for (sid in scape_list) {
   
-  df_sub <- sci_long_scape %>%
+  df_sub <- petty_long_scape %>%
     filter(scape_id == sid)
   
   if (sum(!is.na(df_sub$corruption_index)) < 2) next
@@ -135,19 +163,21 @@ for (sid in scape_list) {
     ) +
     labs(
       title = paste("Petty Corruption Trends in", scape_nm),
-      subtitle = "Subnational areas overlapping with at least 25% of operational landscape",
+      subtitle = "Subnational areas overlapping with operational landscape",
       x = "Year",
       y = "Index value",
       color = "Subnational areas",
       linetype = "Subnational areas",
       caption = "Source: Global Data Lab (GDL), governance dataset. Indicator: Petty Corruption Index."
     ) +
-    scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) +
+    scale_x_continuous(breaks = seq(1995, 2022, by = 1)) +
+    scale_colour_manual(values = mycolors) +
     theme_minimal(base_size = 13) +
     theme(
       plot.title    = element_text(size = 12, face = "bold", hjust = 0.5),
       plot.subtitle = element_text(size = 8, hjust = 0.5),
       axis.text     = element_text(color = "black"),
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
       axis.line     = element_line(color = "black"),
       legend.position = "right",
       legend.title  = element_text(size = 11),

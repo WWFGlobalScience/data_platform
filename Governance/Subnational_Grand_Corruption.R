@@ -85,7 +85,7 @@ st_write(gdl_prod_out2, paste0(filename2), layer = "subnational_grand_corruption
 # ------------------------------------------------------------------------------
 # Figures:grand trends within each scape (lines = overlapping GDL subnational areas)
 # ------------------------------------------------------------------------------
-fig_dir <- "Scapes_Grand_Corruption_Trends/03-06-2026"
+fig_dir <- paste0("Scapes_Grand_Corruption_Trends/",run_date)
 dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
 grand_long_scape <- gdl_prod_out %>%
@@ -113,7 +113,7 @@ nb.cols <- max(tally(group_by(distinct(select(grand_long_scape,gdlcode,scape_id)
 
 #Extend an existing palette (e.g., Set3) to that number
 library(RColorBrewer)
-mycolors <- colorRampPalette(brewer.pal(8, "Set3"))(nb.cols)
+mycolors <- colorRampPalette(brewer.pal(8, "Set2"))(nb.cols)
 
 #Plot all scapes
 for (sid in scape_list) {
