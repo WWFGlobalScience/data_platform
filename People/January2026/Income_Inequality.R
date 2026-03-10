@@ -16,7 +16,7 @@ shapefile_path <- "Spatial Data/Prod_countries_EE/Prod_countries_EE.shp"
 countries_sf <- st_read(shapefile_path)
 country_names <- countries_sf %>% 
   st_drop_geometry() %>% 
-  pull(COUNTRY) %>% unique()
+  pull(ISO3) %>% unique()
 
 # Step 2: Read and filter World Bank Shared Prosperity data
 PovertyGap_Data <- read_csv("pip.csv") %>%
@@ -29,15 +29,16 @@ PovertyGap_Data <- read_csv("pip.csv") %>%
   mutate(bottom40_share = (decile1 + decile2 + decile3 + decile4) * 100) %>%
   select(-c(decile1, decile2, decile3, decile4))
 
+
 # Step 3: Reshape to wide format
 Decile4_wide <- PovertyGap_Data %>%
-  filter(country_name %in% country_names) %>%
+  filter(country_code %in% unique(countries_sf$ISO3)) %>%
+  select(-country_name) %>%
   pivot_wider(
     names_from = reporting_year,
     values_from = bottom40_share,
     names_prefix = "II_"
-  ) %>%
-  select(-country_name)            # drop name, keep country_code for join
+  )
 
 # Step 4: Join with country shapefile and export as geopackage
 people_data_ii <- countries_sf %>%
@@ -95,5 +96,6 @@ for (country in unique(long_data$COUNTRY)) {
   plot_path <- file.path("Income_Inequality_Plots", paste0(gsub("[^a-zA-Z0-9]", "_", country), "_II.png"))
   ggsave(plot_path, plot = p, width = 9, height = 5.5, dpi = 300)
 }
+
 
 
