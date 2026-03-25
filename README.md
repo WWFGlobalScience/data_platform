@@ -25,18 +25,26 @@ data_platform/
 ```
 
 ## Dimensions
+
+
 ### Climate
 Scripts for climate and carbon-related indicators including above-ground biomass, drought index, burned area, greenhouse gas emissions, and flood risk. Raw data comes from sources such as the ESA Climate Change Initiative and Google Earth Engine.
+
 ### Nature
 Scripts for biodiversity and ecosystem extent indicators including forest cover, mangroves, coral reefs, peatlands, seagrass, tidal marsh, free-flowing rivers, Red List Index, and species occurrence for WWF focal species. Includes both remote sensing processing and occurrence data from GBIF.
+
 ### People
 Scripts for human development and wellbeing indicators covering health (child and maternal mortality, vaccination coverage, water and sanitation), nutrition (stunting, wasting, food insecurity), education, gender inequality, poverty (multidimensional, subnational, and international), income inequality, child labor, and reproductive rights. Data sources include WHO, World Bank, and Global Data Lab datasets.
+
 ### Governance
 Scripts for institutional and governance indicators including the Corruption Perceptions Index, subnational corruption measures, armed conflict events (ACLED), environmental defender deaths, and land tenure security. Outputs are joined to country boundaries and exported as GeoPackages.
+
 ### Conservation Activities
 Scripts for quantifying protected areas (WDPA), Other Effective Conservation Measures (OECMs), Indigenous and Community Conserved Areas (ICCAs), Key Biodiversity Areas (KBAs), and protected area downlisting/degazettement (PADDD). Also includes threatened species assessments from the IUCN Red List.
+
 ### Pressures & Drivers
 Google Earth Engine scripts for quantifying human pressures on landscapes including the Global Human Modification Index, water stress, water use efficiency, activity at sea, dam density, invasive species, forest production rates, food loss and waste, and mismanaged plastic waste.
+
 ---
 ## Scripting Languages
 Scripts are provided in multiple languages depending on the data source and processing requirements:
